@@ -126,7 +126,8 @@ double complex_max_element(cmplx *A, int nDIM)
     return max_el;
 }
 
-void L_operate(cmplx* Qmat, const cmplx field_t, const double* gamma, const cmplx* mu, const double* energies, int nDIM)
+void L_operate(cmplx* Qmat, const cmplx field_t, const double* gamma_decay, const double* gamma_pure_dephasing,
+                const cmplx* mu, const double* energies, int nDIM)
 //----------------------------------------------------//
 // 	    RETURNS Q <-- L[Q] AT A PARTICULAR TIME (t)   //
 //----------------------------------------------------//
@@ -141,12 +142,19 @@ void L_operate(cmplx* Qmat, const cmplx field_t, const double* gamma, const cmpl
                 Lmat[m * nDIM + n] += - I * (energies[m] - energies[n]) * Qmat[m * nDIM + n];
                 for(k = 0; k < nDIM; k++)
                 {
+                    Lmat[m * nDIM + n] -= 0.5 * (gamma_decay[n * nDIM + k] + gamma_decay[m * nDIM + k]) * Qmat[m * nDIM + n];
+                    Lmat[m * nDIM + n] += I * field_t * (mu[m * nDIM + k] * Qmat[k * nDIM + n] - Qmat[m * nDIM + k] * mu[k * nDIM + n]);
+
                     if (m == n)
                     {
-                        Lmat[m * nDIM + m] += gamma[k * nDIM + m] * Qmat[k * nDIM + k];
+                        Lmat[m * nDIM + m] += gamma_decay[k * nDIM + m] * Qmat[k * nDIM + k];
                     }
-                    Lmat[m * nDIM + n] -= 0.5 * (gamma[n * nDIM + k] + gamma[m * nDIM + k]) * Qmat[m * nDIM + n];
-                    Lmat[m * nDIM + n] += I * field_t * (mu[m * nDIM + k] * Qmat[k * nDIM + n] - Qmat[m * nDIM + k] * mu[k * nDIM + n]);
+                    else
+                    {
+                        Lmat[m * nDIM + n] -= gamma_pure_dephasing[m * nDIM + n] * Qmat[m * nDIM + n];
+                    }
+
+
                 }
 
             }
@@ -165,7 +173,8 @@ void L_operate(cmplx* Qmat, const cmplx field_t, const double* gamma, const cmpl
 }
 
 
-void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, const cmplx* field, const double* gamma, const cmplx* mu, const cmplx* rho_0,
+void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, const cmplx* field, const double* gamma_decay,
+     const double* gamma_pure_dephasing, const cmplx* mu, const cmplx* rho_0,
      const double* energies, const int timeDIM, const double dt, const int nDIM, cmplx* pol2)
 //------------------------------------------------------------//
 //    GETTING rho(T) FROM rho(0) USING PROPAGATE FUNCTION     //
@@ -181,7 +190,7 @@ void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, const cmplx* field, c
         j=0;
         do
         {
-            L_operate(L_func, field[i], gamma, mu, energies, nDIM);
+            L_operate(L_func, field[i], gamma_decay, gamma_pure_dephasing, mu, energies, nDIM);
             scale_mat(L_func, dt/(j+1), nDIM);
             add_mat(L_func, out, nDIM);
             j+=1;

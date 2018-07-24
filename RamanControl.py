@@ -26,7 +26,8 @@ class RhoPropagate:
         self.time = np.linspace(-self.timeAMP, self.timeAMP, self.timeDIM)[:, np.newaxis]
         self.dt = self.timeAMP * 2. / self.timeDIM
         self.field_t = np.empty(self.timeDIM, dtype=np.complex)
-        self.gamma = np.ascontiguousarray(self.gamma)
+        self.gamma_decay = np.ascontiguousarray(self.gamma_decay)
+        self.gamma_pure_dephasing = np.ascontiguousarray(self.gamma_pure_dephasing)
         self.mu = np.ascontiguousarray(self.mu)
         self.rho_0 = np.ascontiguousarray(self.rho_0)
         self.energies = np.ascontiguousarray(self.energies)
@@ -39,54 +40,52 @@ class RhoPropagate:
     def propagate(self, omega_vib, freq):
 
         self.field_t = np.ascontiguousarray(
-            5e-4 * np.exp(-(self.time + 0.35 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 8.) ** 2))
+            1e-3 * np.exp(-(self.time + 0.35 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 8.) ** 2))
             * (np.cos(self.omega_Raman * self.time) + np.cos((self.omega_Raman + omega_vib) * self.time))
-            + 1e-4 * np.exp(-(self.time - 0.55 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 10.) ** 2))
+            + 1e-3 * np.exp(-(self.time - 0.55 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 10.) ** 2))
             * (np.cos(freq * self.time)) + 0j)
 
         if freq == 0.0:
             self.field_t *= 0.0
 
         Propagate(
-            self.rho, self.dyn_rho, self.dyn_coh, self.field_t, self.gamma, self.mu, self.rho_0, self.energies,
-            self.timeDIM, self.dt, self.pol2
+            self.rho, self.dyn_rho, self.dyn_coh, self.field_t, self.gamma_decay, self.gamma_pure_dephasing,
+            self.mu, self.rho_0, self.energies, self.timeDIM, self.dt, self.pol2
         )
         return self.rho
 
 
 if __name__ == '__main__':
 
-    energies = np.array((0.000, 0.05, 1.000, 1.04)) * 0.15
+    energy_factor = 1. / 27.211385
+    energies = np.array((0.000, 0.07439, 1.94655, 2.02094)) * energy_factor
     rho_0 = np.zeros((len(energies), len(energies)), dtype=np.complex)
     rho_0[0, 0] = 1. + 0j
-    mu = 10*np.ones_like(rho_0)
+    mu = 4.97738*np.ones_like(rho_0)
     np.fill_diagonal(mu, 0j)
-    gamma = np.asarray(
-        [
-            [0.0e-0, 1.5e-4, 1.0e-6, 0.5e-6],
-            [1.5e-4, 0.0e-4, 3.0e-2, 1.0e-6],
-            [1.0e-6, 3.0e-2, 0.0e-0, 1.5e-4],
-            [0.5e-6, 1.0e-6, 1.5e-4, 0.0e-0]
-        ]
-    )*1e-2
 
-    # gamma = np.tril(gamma)
+    gamma_decay = np.ones((4, 4))*2.418884e-8
+    gamma_decay = np.tril(gamma_decay)
+
+    gamma_pure_dephasing = np.ones_like(gamma_decay)*2.418884e-4
+    gamma_pure_dephasing = np.tril(gamma_pure_dephasing)
+    gamma_pure_dephasing[1, 0] = 1.422872e-5
+    gamma_pure_dephasing[3, 2] = 1.422872e-5
+
     ThreeLevel = dict(
         energies=energies,
-        gamma=gamma,
+        gamma_decay=gamma_decay,
+        gamma_pure_dephasing=gamma_pure_dephasing,
         mu=mu,
         rho_0=rho_0,
-        omega_M1=7,
-        omega_M2=1,
-        delta_omega=10,
         timeDIM=100000,
         timeAMP=10000.,
-        omega_Raman=0.5 * 0.15
+        omega_Raman=1. * energy_factor
 
     )
 
     molecule = RhoPropagate(**ThreeLevel)
-    molecule.propagate(0.05 * 0.15, 0.95 * 0.15)
+    molecule.propagate(energies[1], energies[2] - energies[1])
 
     np.set_printoptions(precision=4)
 
@@ -123,8 +122,8 @@ if __name__ == '__main__':
 
     del molecule
     molecule = RhoPropagate(**ThreeLevel)
-    molecule.energies = np.array((0.000, 0.07, 1.000, 1.04)) * 0.15
-    molecule.propagate(0.05 * 0.15, 0.95 * 0.15)
+    energies = np.array((0.000, 0.08439, 1.94655, 2.02094)) * energy_factor
+    molecule.propagate(0.07439 * energy_factor, energies[2] - energies[1])
     print molecule.rho.real
 
     print "Ground state population ", np.diag(molecule.rho.real)[:2].sum()

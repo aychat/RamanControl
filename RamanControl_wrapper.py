@@ -37,7 +37,8 @@ lib.Propagate.argtypes = (
     POINTER(c_complex),     # cmplx* dyn_rho,
     POINTER(c_complex),     # cmplx* dyn_coh,
     POINTER(c_complex),     # cmplx* field, E(t)
-    POINTER(c_double),      # double* gamma matrix
+    POINTER(c_double),      # double* gamma_decay matrix
+    POINTER(c_double),      # double* gamma_pure_dephasing matrix
     POINTER(c_complex),     # cmplx* mu matrix
     POINTER(c_complex),     # cmplx* rho_0 matrix
     POINTER(c_double),      # double* energies
@@ -49,13 +50,14 @@ lib.Propagate.argtypes = (
 lib.Propagate.restype = None
 
 
-def Propagate(out, dyn_rho, dyn_coh, field_t, gamma, mu, rho_0, energies, timeDIM, dt, pol2):
+def Propagate(out, dyn_rho, dyn_coh, field_t, gamma_decay, gamma_pure_dephasing, mu, rho_0, energies, timeDIM, dt, pol2):
     return lib.Propagate(
         out.ctypes.data_as(POINTER(c_complex)),
         dyn_rho.ctypes.data_as(POINTER(c_complex)),
         dyn_coh.ctypes.data_as(POINTER(c_complex)),
         field_t.ctypes.data_as(POINTER(c_complex)),
-        gamma.ctypes.data_as(POINTER(c_double)),
+        gamma_decay.ctypes.data_as(POINTER(c_double)),
+        gamma_pure_dephasing.ctypes.data_as(POINTER(c_double)),
         mu.ctypes.data_as(POINTER(c_complex)),
         rho_0.ctypes.data_as(POINTER(c_complex)),
         energies.ctypes.data_as(POINTER(c_double)),
