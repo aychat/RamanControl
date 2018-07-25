@@ -40,10 +40,11 @@ class RhoPropagate:
     def propagate(self, omega_vib, freq):
 
         self.field_t = np.ascontiguousarray(
-            1e-3 * np.exp(-(self.time + 0.35 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 8.) ** 2))
+            1e-3 * np.exp(-(self.time + 0.35 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 7.5) ** 2))
             * (np.cos(self.omega_Raman * self.time) + np.cos((self.omega_Raman + omega_vib) * self.time))
-            + 1e-3 * np.exp(-(self.time - 0.55 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 10.) ** 2))
-            * (np.cos(freq * self.time)) + 0j)
+            # + 5e-3 * np.exp(-(self.time - 0.55 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 7.5) ** 2))
+            # * (np.cos(freq * self.time))
+            + 0j)
 
         if freq == 0.0:
             self.field_t *= 0.0
@@ -57,7 +58,11 @@ class RhoPropagate:
 
 if __name__ == '__main__':
 
+    np.set_printoptions(precision=4)
+
     energy_factor = 1. / 27.211385
+    time_factor = .02418
+
     energies = np.array((0.000, 0.07439, 1.94655, 2.02094)) * energy_factor
     rho_0 = np.zeros((len(energies), len(energies)), dtype=np.complex)
     rho_0[0, 0] = 1. + 0j
@@ -68,10 +73,14 @@ if __name__ == '__main__':
     gamma_decay = np.tril(gamma_decay)
 
     gamma_pure_dephasing = np.ones_like(gamma_decay)*2.418884e-4
-    gamma_pure_dephasing = np.tril(gamma_pure_dephasing)
+    np.fill_diagonal(gamma_pure_dephasing, 0.0)
     gamma_pure_dephasing[1, 0] = 1.422872e-5
     gamma_pure_dephasing[3, 2] = 1.422872e-5
+    gamma_pure_dephasing[0, 1] = 1.422872e-5
+    gamma_pure_dephasing[2, 3] = 1.422872e-5
+    # gamma_pure_dephasing = np.tril(gamma_pure_dephasing)
 
+    print gamma_pure_dephasing
     ThreeLevel = dict(
         energies=energies,
         gamma_decay=gamma_decay,
@@ -79,70 +88,91 @@ if __name__ == '__main__':
         mu=mu,
         rho_0=rho_0,
         timeDIM=100000,
-        timeAMP=10000.,
-        omega_Raman=1. * energy_factor
+        timeAMP=20000.,
+        omega_Raman=0.8 * energy_factor
 
     )
 
-    molecule = RhoPropagate(**ThreeLevel)
-    molecule.propagate(energies[1], energies[2] - energies[1])
+    molecule1 = RhoPropagate(**ThreeLevel)
+    molecule1.propagate(energies[1], energies[2] - energies[1])
 
-    np.set_printoptions(precision=4)
+    print "Ground state population ", np.diag(molecule1.rho.real)[:2].sum()
+    print "Excited state population ", np.diag(molecule1.rho.real)[2:].sum()
+    print
 
-    print molecule.rho.real
+    molecule1_exc_pop = np.diag(molecule1.rho.real)[2:].sum()
 
-    print "Ground state population ", np.diag(molecule.rho.real)[:2].sum()
-    print "Excited state population ", np.diag(molecule.rho.real)[2:].sum()
-
-    fig, axes = plt.subplots(nrows=3, ncols=1)
-    axes[0].plot(molecule.time * .02418, molecule.field_t, 'r')
+    fig, axes = plt.subplots(nrows=4, ncols=1)
+    axes[0].plot(molecule1.time * .02418, molecule1.field_t.real, 'r')
     axes[0].set_ylabel("Field (a.u.)")
     axes[0].set_xlabel("Time (fs)")
     axes[0].ticklabel_format(axis='y', style='sci', scilimits=(-1, 1))
 
-    axes[1].plot(molecule.time * .02418, molecule.dyn_rho[0].real, label='$\\rho_{11}$')
-    axes[1].plot(molecule.time * .02418, molecule.dyn_rho[1].real, label='$\\rho_{22}$')
-    axes[1].plot(molecule.time * .02418, molecule.dyn_rho[2].real, label='$\\rho_{33}$')
-    axes[1].plot(molecule.time * .02418, molecule.dyn_rho[3].real, label='$\\rho_{44}$')
-
+    axes[1].plot(molecule1.time * time_factor, molecule1.dyn_rho[0].real, label='$\\rho_{11}$')
+    axes[1].plot(molecule1.time * time_factor, molecule1.dyn_rho[1].real, label='$\\rho_{22}$')
+    axes[1].plot(molecule1.time * time_factor, molecule1.dyn_rho[2].real, label='$\\rho_{33}$')
+    axes[1].plot(molecule1.time * time_factor, molecule1.dyn_rho[3].real, label='$\\rho_{44}$')
     axes[1].set_ylabel("Populations")
     axes[1].set_xlabel("Time (fs)")
     axes[1].legend(loc=2)
 
-    axes[2].plot(molecule.time * .02418, molecule.dyn_coh[0].real, label='$\\rho_{12}$')
-    axes[2].plot(molecule.time * .02418, molecule.dyn_coh[1].real, label='$\\rho_{13}$')
-    axes[2].plot(molecule.time * .02418, molecule.dyn_coh[2].real, label='$\\rho_{14}$')
-    axes[2].plot(molecule.time * .02418, molecule.dyn_coh[3].real, label='$\\rho_{23}$')
-    axes[2].plot(molecule.time * .02418, molecule.dyn_coh[4].real, label='$\\rho_{24}$')
-    axes[2].plot(molecule.time * .02418, molecule.dyn_coh[5].real, label='$\\rho_{34}$')
-    axes[2].set_ylabel("Coherences")
+    axes[3].plot(molecule1.time * time_factor, molecule1.dyn_coh[0].real, label='$\\rho_{12}$')
+    axes[3].plot(molecule1.time * time_factor, molecule1.dyn_coh[1].real, label='$\\rho_{13}$')
+    axes[3].plot(molecule1.time * time_factor, molecule1.dyn_coh[2].real, label='$\\rho_{14}$')
+    axes[3].plot(molecule1.time * time_factor, molecule1.dyn_coh[3].real, label='$\\rho_{23}$')
+    axes[3].plot(molecule1.time * time_factor, molecule1.dyn_coh[4].real, label='$\\rho_{24}$')
+    axes[3].plot(molecule1.time * time_factor, molecule1.dyn_coh[5].real, label='$\\rho_{34}$')
+    axes[3].set_ylabel("Coherences")
+    axes[3].set_xlabel("Time (fs)")
+    axes[3].ticklabel_format(axis='y', style='sci', scilimits=(-1, 1))
+    axes[3].legend(loc=2)
+
+    molecule2 = RhoPropagate(**ThreeLevel)
+    molecule2.energies = np.array((0.000, 0.08439, 1.94655, 2.02094)) * energy_factor
+    molecule2.propagate(0.07439 * energy_factor, (1.94655 - 0.07439) * energy_factor)
+
+    print "Ground state population ", np.diag(molecule2.rho.real)[:2].sum()
+    print "Excited state population ", np.diag(molecule2.rho.real)[2:].sum()
+
+    molecule2_exc_pop = np.diag(molecule2.rho.real)[2:].sum()
+    print
+    print molecule1_exc_pop - molecule2_exc_pop
+    axes[2].plot(molecule2.time * time_factor, molecule2.dyn_rho[0].real, label='$\\rho_{11}$')
+    axes[2].plot(molecule2.time * time_factor, molecule2.dyn_rho[1].real, label='$\\rho_{22}$')
+    axes[2].plot(molecule2.time * time_factor, molecule2.dyn_rho[2].real, label='$\\rho_{33}$')
+    axes[2].plot(molecule2.time * time_factor, molecule2.dyn_rho[3].real, label='$\\rho_{44}$')
+    axes[2].set_ylabel("Populations")
     axes[2].set_xlabel("Time (fs)")
-    axes[2].ticklabel_format(axis='y', style='sci', scilimits=(-1, 1))
     axes[2].legend(loc=2)
 
-    del molecule
-    molecule = RhoPropagate(**ThreeLevel)
-    energies = np.array((0.000, 0.08439, 1.94655, 2.02094)) * energy_factor
-    molecule.propagate(0.07439 * energy_factor, energies[2] - energies[1])
-    print molecule.rho.real
+    print
+    print molecule1.rho.real
+    print
+    print molecule2.rho.real
 
-    print "Ground state population ", np.diag(molecule.rho.real)[:2].sum()
-    print "Excited state population ", np.diag(molecule.rho.real)[2:].sum()
-    axes[1].plot(molecule.time * .02418, molecule.dyn_rho[0].real, '-.')
-    axes[1].plot(molecule.time * .02418, molecule.dyn_rho[1].real, '-.')
-    axes[1].plot(molecule.time * .02418, molecule.dyn_rho[2].real, '-.')
-    axes[1].plot(molecule.time * .02418, molecule.dyn_rho[3].real, '-.')
+    del molecule1
+    del molecule2
 
-    # Nfreq = 130
-    # rho_excited = np.empty(Nfreq)
+    # Nfreq = 300
+    # rho_excited1 = np.empty(Nfreq)
+    # rho_excited2 = np.empty(Nfreq)
     # for w in range(1, Nfreq):
-    #     molecule = RhoPropagate(**ThreeLevel)
-    #     molecule.propagate(0.05 * 0.15, w * 0.01 * 0.15)
-    #     rho_excited[w] = np.diag(molecule.rho.real)[2:].sum()
-    #     print w, rho_excited[w]
-    #     del molecule
+    #     molecule1 = RhoPropagate(**ThreeLevel)
+    #     molecule1.energies = np.array((0.000, 0.07439, 1.94655, 2.02094)) * energy_factor
+    #     molecule2 = RhoPropagate(**ThreeLevel)
+    #     molecule2.energies = np.array((0.000, 0.08439, 1.94655, 2.12094)) * energy_factor
+    #
+    #     molecule1.propagate(0.07439 * energy_factor, w * 0.005 * (1.94655 - 0.07439) * energy_factor)
+    #     molecule2.propagate(0.07439 * energy_factor, w * 0.005 * (1.94655 - 0.07439) * energy_factor)
+    #     rho_excited1[w] = np.diag(molecule1.rho.real)[2:].sum()
+    #     rho_excited2[w] = np.diag(molecule2.rho.real)[2:].sum()
+    #     print w, rho_excited1[w], rho_excited2[w]
+    #     del molecule1
+    #     del molecule2
     #
     # fig, axes = plt.subplots(nrows=1, ncols=1)
-    # axes.plot(rho_excited[1:], 'k*-')
+    # axes.plot(rho_excited1[1:], 'k*-', label='molecule 1')
+    # axes.plot(rho_excited2[1:], 'r*-', label='molecule 2')
+
     plt.show()
 
