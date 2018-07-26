@@ -40,9 +40,9 @@ class RhoPropagate:
     def propagate(self, omega_vib, freq):
 
         self.field_t = np.ascontiguousarray(
-            1e-3 * np.exp(-(self.time + 0.35 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 7.5) ** 2))
+            0.8e-3 * np.exp(-(self.time + 0.35 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 7.5) ** 2))
             * (np.cos(self.omega_Raman * self.time) + np.cos((self.omega_Raman + omega_vib) * self.time))
-            # + 5e-3 * np.exp(-(self.time - 0.55 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 7.5) ** 2))
+            # + .5e-3 * np.exp(-(self.time - 0.55 * self.timeAMP) ** 2 / (2. * (self.timeAMP / 50) ** 2))
             # * (np.cos(freq * self.time))
             + 0j)
 
@@ -70,6 +70,7 @@ if __name__ == '__main__':
     np.fill_diagonal(mu, 0j)
 
     gamma_decay = np.ones((4, 4))*2.418884e-8
+    np.fill_diagonal(gamma_decay, 0.0)
     gamma_decay = np.tril(gamma_decay)
 
     gamma_pure_dephasing = np.ones_like(gamma_decay)*2.418884e-4
@@ -89,7 +90,7 @@ if __name__ == '__main__':
         rho_0=rho_0,
         timeDIM=100000,
         timeAMP=20000.,
-        omega_Raman=0.8 * energy_factor
+        omega_Raman=1 * energy_factor
 
     )
 
@@ -128,7 +129,7 @@ if __name__ == '__main__':
     axes[3].legend(loc=2)
 
     molecule2 = RhoPropagate(**ThreeLevel)
-    molecule2.energies = np.array((0.000, 0.08439, 1.94655, 2.02094)) * energy_factor
+    molecule2.energies = np.array((0.000, 0.08039, 1.94655, 2.02094)) * energy_factor
     molecule2.propagate(0.07439 * energy_factor, (1.94655 - 0.07439) * energy_factor)
 
     print "Ground state population ", np.diag(molecule2.rho.real)[:2].sum()
