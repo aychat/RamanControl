@@ -49,7 +49,17 @@ class RhoPropagate:
         self.pol2 = np.ascontiguousarray(np.zeros_like(params.timeDIM, dtype=np.complex))
 
     def propagate(self, vib_field_amp, vib_field_width, elec_exc_field_amp, elec_exc_field_width, omega_vib, freq, params):
-
+        """
+        PROPAGATOR TO CALCULATE DENSITY MATRIX DYNAMICS FOR INTERACTION OF 4-LEVEL SYSTEM WITH FIELD
+        :param vib_field_amp: Amplitude of field leading to vibrational excitation of the ground state
+        :param vib_field_width: Width (gaussian envelope) of above field
+        :param elec_exc_field_amp: Amplitude of field leading to electronic excitation from first vibrational state
+        :param elec_exc_field_width: Width (gaussian envelope) of above field
+        :param omega_vib: Vibrational frequency w_v for vibrational excitation
+        :param freq: Frequency for electronic excitation
+        :param params: Parameters ADict variable containing constants and field parameters
+        :return: rho(T) after interaction with E(t)
+        """
         t = self.time
         self.field_t = np.ascontiguousarray(
             vib_field_amp * np.exp(-(t + 0.35 * params.timeAMP) ** 2 / (2. * (params.timeAMP / vib_field_width) ** 2))
@@ -106,7 +116,7 @@ if __name__ == '__main__':
     gamma_pure_dephasing[0, 1] = vibrational_dephasing
     gamma_pure_dephasing[2, 3] = vibrational_dephasing
 
-    ThreeLevel = dict(
+    FourLevel = dict(
         energies=energies,
         gamma_decay=gamma_decay,
         gamma_pure_dephasing=gamma_pure_dephasing,
@@ -114,11 +124,11 @@ if __name__ == '__main__':
         rho_0=rho_0,
     )
 
-    molecule1 = RhoPropagate(params, **ThreeLevel)
+    molecule1 = RhoPropagate(params, **FourLevel)
     molecule1.propagate(5e-4, 5., 1e-3, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
 
     molecule1_excited_pop = np.diag(molecule1.rho.real)[2:].sum()
-    molecule2 = RhoPropagate(params, **ThreeLevel)
+    molecule2 = RhoPropagate(params, **FourLevel)
     molecule2.energies = np.array((0.000, 0.09439, 1.94655, 2.02094)) * params.energy_factor
     molecule2.propagate(5e-4, 5., 1e-3, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
     molecule2_excited_pop = np.diag(molecule2.rho.real)[2:].sum()
@@ -140,9 +150,14 @@ if __name__ == '__main__':
     start = time.time()
 
     def rho_cost_function(x, grad):
-        moleculeA = RhoPropagate(params, **ThreeLevel)
+        """
+
+        :array x: Optimization Variable
+        :array grad: Gradient w.r.t. to each x_i; Only used for gradient dependent optimization algorithms
+        """
+        moleculeA = RhoPropagate(params, **FourLevel)
         moleculeA.energies = np.array((0.000, 0.07439, 1.94655, 2.02094)) * params.energy_factor
-        moleculeB = RhoPropagate(params, **ThreeLevel)
+        moleculeB = RhoPropagate(params, **FourLevel)
         moleculeB.energies = np.array((0.000, 0.09439, 1.94655, 2.02094)) * params.energy_factor
 
         moleculeA.propagate(
@@ -163,7 +178,7 @@ if __name__ == '__main__':
 
         return moleculeA_excited_pop - moleculeB_excited_pop
 
-    opt = nlopt.opt(nlopt.LN_COBYLA, 4)
+    opt = nlopt.opt(nlopt.LN_COBYLA, 4)             # LN stands for Local No-derivative
     opt.set_lower_bounds([1e-5, 5., 1e-5, 30.])
     opt.set_upper_bounds([1e-3, 20., 1e-3, 75.])
     opt.set_max_objective(rho_cost_function)
