@@ -115,12 +115,12 @@ if __name__ == '__main__':
     )
 
     molecule1 = RhoPropagate(params, **ThreeLevel)
-    molecule1.propagate(5e-4, 5., 1e-3, 30., 0.07439 * params.energy_factor, (2.02094 - 0.07439) * params.energy_factor, params)
+    molecule1.propagate(5e-4, 5., 1e-3, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
 
     molecule1_excited_pop = np.diag(molecule1.rho.real)[2:].sum()
     molecule2 = RhoPropagate(params, **ThreeLevel)
     molecule2.energies = np.array((0.000, 0.09439, 1.94655, 2.02094)) * params.energy_factor
-    molecule2.propagate(5e-4, 5., 1e-3, 30., 0.07439 * params.energy_factor, (2.02094 - 0.07439) * params.energy_factor, params)
+    molecule2.propagate(5e-4, 5., 1e-3, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
     molecule2_excited_pop = np.diag(molecule2.rho.real)[2:].sum()
 
     print '\n', molecule1.rho.real
@@ -148,13 +148,13 @@ if __name__ == '__main__':
         moleculeA.propagate(
             x[0], x[1], x[2], x[3],
             0.07439 * params.energy_factor,
-            (2.02094 - 0.07439) * params.energy_factor,
+            (1.94655 - 0.07439) * params.energy_factor,
             params
         )
         moleculeB.propagate(
             x[0], x[1], x[2], x[3],
             0.07439 * params.energy_factor,
-            (2.02094 - 0.07439) * params.energy_factor,
+            (1.94655 - 0.07439) * params.energy_factor,
             params
         )
 
@@ -164,15 +164,13 @@ if __name__ == '__main__':
         return moleculeA_excited_pop - moleculeB_excited_pop
 
     opt = nlopt.opt(nlopt.LN_COBYLA, 4)
-    opt.set_lower_bounds([1e-5, 5., 1e-5, 30])
-    opt.set_upper_bounds([1e-3, 20., 1e-3, 75])
+    opt.set_lower_bounds([1e-5, 5., 1e-5, 30.])
+    opt.set_upper_bounds([1e-3, 20., 1e-3, 75.])
     opt.set_max_objective(rho_cost_function)
-    opt.set_xtol_rel(1e-4)
-    x = opt.optimize([1e-4, 10., 1e-4, 50])
+    opt.set_xtol_rel(1e-7)
+    x = opt.optimize([1e-3, 10., 1e-3, 32.5])
     maxf = opt.last_optimum_value()
-    print("optimum at ", x[0], x[1], x[2], x[3]
-
-          )
+    print("optimum at ", x[0], x[1], x[2], x[3])
     print("maximum value = ", maxf)
     print("result code = ", opt.last_optimize_result())
 

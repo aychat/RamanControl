@@ -3,7 +3,7 @@ import numpy as np
 
 
 def plot_Raman_Assisted_Control(molecule1, molecule2, params):
-    fig, axes = plt.subplots(nrows=4, ncols=1)
+    fig, axes = plt.subplots(nrows=4, ncols=1, sharex=True)
     axes[0].plot(molecule1.time * .02418, molecule1.field_t.real, 'r')
     axes[0].set_ylabel("Field (a.u.)")
     axes[0].set_xlabel("Time (fs)")
