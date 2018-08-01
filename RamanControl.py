@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from types import MethodType, FunctionType
 from RamanControl_wrapper import Propagate
+from RamanFieldFunctions import *
 
 
 class ADict(dict):
@@ -46,34 +47,44 @@ class RhoPropagate:
         self.rho = np.ascontiguousarray(np.zeros_like(self.rho_0, dtype=np.complex))
         self.dyn_rho = np.ascontiguousarray(np.zeros((4, params.timeDIM), dtype=np.complex))
         self.dyn_coh = np.ascontiguousarray(np.zeros((6, params.timeDIM), dtype=np.complex))
-        self.pol2 = np.ascontiguousarray(np.zeros_like(params.timeDIM, dtype=np.complex))
 
-    def propagate(self, vib_field_amp, vib_field_width, elec_exc_field_amp, elec_exc_field_width, omega_vib, freq, params):
+        self.d_dt_field_t = np.empty(params.timeDIM, dtype=np.complex)
+        self.d_dt_A_R = np.empty(params.timeDIM, dtype=np.complex)
+        self.d_dt_width_R = np.empty(params.timeDIM, dtype=np.complex)
+        self.d_dt_A_EE = np.empty(params.timeDIM, dtype=np.complex)
+        self.d_dt_width_EE = np.empty(params.timeDIM, dtype=np.complex)
+
+    def propagate(self, A_R, width_R, A_EE, width_EE, omega_vib, freq, params):
         """
         PROPAGATOR TO CALCULATE DENSITY MATRIX DYNAMICS FOR INTERACTION OF 4-LEVEL SYSTEM WITH FIELD
-        :param vib_field_amp: Amplitude of field leading to vibrational excitation of the ground state
-        :param vib_field_width: Width (gaussian envelope) of above field
-        :param elec_exc_field_amp: Amplitude of field leading to electronic excitation from first vibrational state
-        :param elec_exc_field_width: Width (gaussian envelope) of above field
+        :param A_R: Amplitude of field leading to vibrational excitation of the ground state
+        :param width_R: Width (gaussian envelope) of above field
+        :param A_EE: Amplitude of field leading to electronic excitation from first vibrational state
+        :param width_EE: Width (gaussian envelope) of above field
         :param omega_vib: Vibrational frequency w_v for vibrational excitation
         :param freq: Frequency for electronic excitation
         :param params: Parameters ADict variable containing constants and field parameters
         :return: rho(T) after interaction with E(t)
         """
         t = self.time
-        self.field_t = np.ascontiguousarray(
-            vib_field_amp * np.exp(-(t + 0.35 * params.timeAMP) ** 2 / (2. * (params.timeAMP / vib_field_width) ** 2))
-            * (np.cos(params.omega_Raman * t) + np.cos((params.omega_Raman + omega_vib) * t))
-            + elec_exc_field_amp * np.exp(-(t - 0.55 * params.timeAMP) ** 2 / (2. * (params.timeAMP / elec_exc_field_width) ** 2))
-            * (np.cos(freq * t))
-            + 0j)
+        t0_R = - 0.35 * params.timeAMP
+        t0_EE = 0.55 * params.timeAMP
+        width_R = params.timeAMP / width_R
+        width_EE = params.timeAMP / width_EE
+        w_R = params.omega_Raman
+        w_v = omega_vib
 
-        if freq == 0.0:
-            self.field_t *= 0.0
+        # self.field_t = np.ascontiguousarray(field_t(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
+        self.field_t = A_R * np.exp(-(t - t0_R) ** 2 / (2. * width_R ** 2)) * (np.cos(w_R * t) + np.cos((w_R + w_v) * t)) \
+           + A_EE * np.exp(-(t - t0_EE) ** 2 / (2. * width_EE ** 2)) * (np.cos(freq * t)) + 0j
+        # self.d_dt_A_R = np.ascontiguousarray(d_dt_A_R(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
+        # self.d_dt_width_R = np.ascontiguousarray(d_dt_width_R(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
+        # self.d_dt_A_EE = np.ascontiguousarray(d_dt_A_EE(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
+        # self.d_dt_width_EE = np.ascontiguousarray(d_dt_width_EE(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
 
         Propagate(
             self.rho, self.dyn_rho, self.dyn_coh, self.field_t, self.gamma_decay, self.gamma_pure_dephasing,
-            self.mu, self.rho_0, self.energies, params.timeDIM, self.dt, self.pol2
+            self.mu, self.rho_0, self.energies, params.timeDIM, self.dt
         )
         return self.rho
 

@@ -175,7 +175,7 @@ void L_operate(cmplx* Qmat, const cmplx field_t, const double* gamma_decay, cons
 
 void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, const cmplx* field, const double* gamma_decay,
      const double* gamma_pure_dephasing, const cmplx* mu, const cmplx* rho_0,
-     const double* energies, const int timeDIM, const double dt, const int nDIM, cmplx* pol2)
+     const double* energies, const int timeDIM, const double dt, const int nDIM)
 //------------------------------------------------------------//
 //    GETTING rho(T) FROM rho(0) USING PROPAGATE FUNCTION     //
 //------------------------------------------------------------//
@@ -209,8 +209,6 @@ void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, const cmplx* field, c
         dyn_coh[5*timeDIM + i] = out[2*nDIM + 3];
 
         copy_mat(out, L_func, nDIM);
-//        print_complex_mat(out);
-//        pol2[i] = out[1] + out[2] + out[3] + out[5] + out[6] + out[7];
     }
 
     free(L_func);

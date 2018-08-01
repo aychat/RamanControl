@@ -45,12 +45,11 @@ lib.Propagate.argtypes = (
     c_int,                  # const int timeDIM,
     c_double,               # const double dt,
     c_int,                  # const int nDIM,
-    POINTER(c_complex),     # cmplx* pol2(t)
 )
 lib.Propagate.restype = None
 
 
-def Propagate(out, dyn_rho, dyn_coh, field_t, gamma_decay, gamma_pure_dephasing, mu, rho_0, energies, timeDIM, dt, pol2):
+def Propagate(out, dyn_rho, dyn_coh, field_t, gamma_decay, gamma_pure_dephasing, mu, rho_0, energies, timeDIM, dt):
     return lib.Propagate(
         out.ctypes.data_as(POINTER(c_complex)),
         dyn_rho.ctypes.data_as(POINTER(c_complex)),
@@ -64,5 +63,4 @@ def Propagate(out, dyn_rho, dyn_coh, field_t, gamma_decay, gamma_pure_dephasing,
         timeDIM,
         dt,
         len(energies),
-        pol2.ctypes.data_as(POINTER(c_complex))
     )
