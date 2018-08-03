@@ -5,6 +5,30 @@
 
 typedef double complex cmplx;
 
+typedef struct parameters{
+    double *gamma_decay;
+    double *gamma_pure_dephasing;
+    cmplx *mu;
+    cmplx *rho_0;
+    double *energies;
+
+    double *time;
+
+    double A_R;
+    double width_R;
+    double t0_R;
+    double A_EE;
+    double width_EE;
+    double t0_EE;
+
+    double w_R;
+    double w_v;
+    double w_EE;
+
+    int nDIM;
+    int timeDIM;
+} parameters;
+
 //====================================================================================================================//
 //                                                                                                                    //
 //                                 AUXILIARY FUNCTIONS FOR SIMPLE MATRIX FUNCTIONS                                    //
@@ -152,6 +176,7 @@ double complex_max_element(cmplx *A, int nDIM)
     return max_el;
 }
 
+
 void L_operate(cmplx* Qmat, const cmplx field_ti, const double* gamma_decay, const double* gamma_pure_dephasing,
                 const cmplx* mu, const double* energies, int nDIM)
 //----------------------------------------------------//
@@ -198,22 +223,63 @@ void L_operate(cmplx* Qmat, const cmplx field_ti, const double* gamma_decay, con
 
 }
 
+void CalculateField(cmplx* field, struct parameters* func_params)
+{
+    int i;
+    int nDIM = func_params->nDIM;
+    int timeDIM = func_params->timeDIM;
 
-void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, const cmplx* field, const double* gamma_decay,
-     const double* gamma_pure_dephasing, const cmplx* mu, const cmplx* rho_0,
-     const double* energies, const int timeDIM, const double dt, const int nDIM)
+    double* t = func_params->time;
+
+    double A_R = func_params->A_R;
+    double width_R = func_params->width_R;
+    double t0_R = func_params->t0_R;
+
+    double A_EE = func_params->A_EE;
+    double width_EE = func_params->width_EE;
+    double t0_EE = func_params->t0_EE;
+
+    double w_R = func_params->w_R;
+    double w_v = func_params->w_v;
+    double w_EE = func_params->w_EE;
+
+    for(i=0; i<timeDIM; i++)
+    {
+        field[i] = A_R * exp(-pow(t[i] - t0_R, 2) / (2. * pow(width_R, 2))) * (cos((w_R + w_v) * t[i]) + cos(w_R * t[i]))
+        + A_EE * exp(-pow(t[i] - t0_EE, 2) / (2. * pow(width_EE, 2))) * cos(w_EE * t[i]);
+    }
+}
+
+void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, cmplx* field, struct parameters* func_params)
 //------------------------------------------------------------//
 //    GETTING rho(T) FROM rho(0) USING PROPAGATE FUNCTION     //
 //------------------------------------------------------------//
 {
     int i, j, k;
-    cmplx* L_func = (cmplx*)calloc(nDIM * nDIM, sizeof(cmplx));
+    int nDIM = func_params->nDIM;
+    int timeDIM = func_params->timeDIM;
 
+    CalculateField(field, func_params);
+
+    double *gamma_decay = func_params->gamma_decay;
+    double *gamma_pure_dephasing = func_params->gamma_pure_dephasing;
+    cmplx *mu = func_params->mu;
+    cmplx *rho_0 = func_params->rho_0;
+    double *energies = func_params->energies;
+    double *time = func_params->energies;
+
+    double dt = time[1] - time[0];
+
+    cmplx* L_func = (cmplx*)calloc(nDIM * nDIM, sizeof(cmplx));
     copy_mat(rho_0, L_func, nDIM);
     copy_mat(rho_0, out, nDIM);
 
+    printf("%d \n", timeDIM);
+
     for(i=0; i<timeDIM; i++)
     {
+        printf("%5.5lf \n", creal(field[i]));
+
         j=0;
         do
         {
@@ -221,7 +287,7 @@ void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, const cmplx* field, c
             scale_mat(L_func, dt/(j+1), nDIM);
             add_mat(L_func, out, nDIM);
             j+=1;
-        }while(complex_max_element(L_func, nDIM) > 1.0E-12);
+        }while(complex_max_element(L_func, nDIM) > 1.0E-8);
 
         for(k=0; k<nDIM; k++)
         {
@@ -239,5 +305,4 @@ void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, const cmplx* field, c
     }
 
     free(L_func);
-
 }

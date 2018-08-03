@@ -1,8 +1,6 @@
 import numpy as np
-import matplotlib.pyplot as plt
 from types import MethodType, FunctionType
 from RamanControl_wrapper import Propagate
-from RamanFieldFunctions import *
 
 
 class ADict(dict):
@@ -43,16 +41,9 @@ class RhoPropagate:
         self.mu = np.ascontiguousarray(self.mu)
         self.rho_0 = np.ascontiguousarray(self.rho_0)
         self.energies = np.ascontiguousarray(self.energies)
-        self.H0 = np.diag(self.energies)
         self.rho = np.ascontiguousarray(np.zeros_like(self.rho_0, dtype=np.complex))
         self.dyn_rho = np.ascontiguousarray(np.zeros((4, params.timeDIM), dtype=np.complex))
         self.dyn_coh = np.ascontiguousarray(np.zeros((6, params.timeDIM), dtype=np.complex))
-
-        self.d_dt_field_t = np.empty(params.timeDIM, dtype=np.complex)
-        self.d_dt_A_R = np.empty(params.timeDIM, dtype=np.complex)
-        self.d_dt_width_R = np.empty(params.timeDIM, dtype=np.complex)
-        self.d_dt_A_EE = np.empty(params.timeDIM, dtype=np.complex)
-        self.d_dt_width_EE = np.empty(params.timeDIM, dtype=np.complex)
 
     def propagate(self, A_R, width_R, A_EE, width_EE, omega_vib, freq, params):
         """
@@ -74,13 +65,13 @@ class RhoPropagate:
         w_R = params.omega_Raman
         w_v = omega_vib
 
-        # self.field_t = np.ascontiguousarray(field_t(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
-        self.field_t = A_R * np.exp(-(t - t0_R) ** 2 / (2. * width_R ** 2)) * (np.cos(w_R * t) + np.cos((w_R + w_v) * t)) \
-           + A_EE * np.exp(-(t - t0_EE) ** 2 / (2. * width_EE ** 2)) * (np.cos(freq * t)) + 0j
-        # self.d_dt_A_R = np.ascontiguousarray(d_dt_A_R(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
-        # self.d_dt_width_R = np.ascontiguousarray(d_dt_width_R(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
-        # self.d_dt_A_EE = np.ascontiguousarray(d_dt_A_EE(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
-        # self.d_dt_width_EE = np.ascontiguousarray(d_dt_width_EE(A_R, A_EE, width_R, width_EE, t0_R, t0_EE, w_R, w_v, freq, t))
+        self.field_t = np.ascontiguousarray(
+            A_R * np.exp(-(t - t0_R) ** 2 / (2. * width_R ** 2))
+            * (np.cos(w_R * t) + np.cos((w_R + w_v) * t))
+            + A_EE * np.exp(-(t - t0_EE) ** 2 / (2. * width_EE ** 2))
+            * (np.cos(freq * t))
+            + 0j
+        )
 
         Propagate(
             self.rho, self.dyn_rho, self.dyn_coh, self.field_t, self.gamma_decay, self.gamma_pure_dephasing,
@@ -193,7 +184,7 @@ if __name__ == '__main__':
     opt.set_lower_bounds([1e-5, 5., 1e-5, 30.])
     opt.set_upper_bounds([1e-3, 20., 1e-3, 75.])
     opt.set_max_objective(rho_cost_function)
-    opt.set_xtol_rel(1e-7)
+    opt.set_xtol_rel(1e-6)
     x = opt.optimize([1e-3, 10., 1e-3, 32.5])
     maxf = opt.last_optimum_value()
     print("optimum at ", x[0], x[1], x[2], x[3])
