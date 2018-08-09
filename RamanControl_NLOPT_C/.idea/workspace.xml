@@ -2,25 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="f067fb94-3358-44a5-bd29-0ceb200c1a7c" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/RamanControl_NLOPT_C.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/dictionaries/ayanprinceton.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/other.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RamanAssistedControl.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RamanAssistedControl.py" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RamanAssistedControl.so" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/RamanAssistedControl_wrapper.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../RamanControl.c" beforeDir="false" afterPath="$PROJECT_DIR$/../RamanControl.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../RamanControl.py" beforeDir="false" afterPath="$PROJECT_DIR$/../RamanControl.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../RamanControl.so" beforeDir="false" afterPath="$PROJECT_DIR$/../RamanControl.so" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RamanControl.c" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/RamanControl.py" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/RamanControl.so" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/RamanControl_wrapper.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/RamanAssistedControl.c" beforeDir="false" afterPath="$PROJECT_DIR$/RamanAssistedControl.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../RamanControl_auxiliary_functions.c" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../RamanFieldFunctions.py" beforeDir="false" />
     </list>
@@ -39,6 +22,7 @@
     <session id="54883413">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
+          <entry key="project.closed" value="1" />
           <entry key="project.open.time.1" value="1" />
           <entry key="project.open.time.6" value="1" />
           <entry key="project.opened" value="2" />
@@ -84,10 +68,10 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/RamanAssistedControl_wrapper.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1615">
+            <state relative-caret-position="530">
               <caret line="87" column="19" selection-start-line="87" selection-start-column="19" selection-end-line="87" selection-end-column="19" />
               <folding>
                 <element signature="e#0#9#0" expanded="true" />
@@ -96,11 +80,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/RamanAssistedControl.c">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="214">
-              <caret line="94" column="9" selection-start-line="94" selection-start-column="9" selection-end-line="94" selection-end-column="9" />
+            <state relative-caret-position="784">
+              <caret line="95" column="9" selection-start-line="95" selection-start-column="9" selection-end-line="95" selection-end-column="9" />
             </state>
           </provider>
         </entry>
@@ -336,20 +320,20 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/RamanAssistedControl.c">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="784">
+          <caret line="95" column="9" selection-start-line="95" selection-start-column="9" selection-end-line="95" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/RamanAssistedControl_wrapper.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1615">
+        <state relative-caret-position="530">
           <caret line="87" column="19" selection-start-line="87" selection-start-column="19" selection-end-line="87" selection-end-column="19" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/RamanAssistedControl.c">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="214">
-          <caret line="94" column="9" selection-start-line="94" selection-start-column="9" selection-end-line="94" selection-end-column="9" />
         </state>
       </provider>
     </entry>

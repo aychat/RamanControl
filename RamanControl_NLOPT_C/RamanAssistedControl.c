@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <nlopt.h>
 
 typedef double complex cmplx;
 
@@ -251,6 +252,8 @@ void CalculateField(cmplx* field, parameters* params)
     double w_v = params->w_v;
     double w_EE = params->w_EE;
 
+    printf("%12.12lf %12.12lf", A_R, A_EE);
+
     for(i=0; i<timeDIM; i++)
     {
         field[i] = A_R * exp(-pow(t[i] - t0_R, 2) / (2. * pow(width_R, 2))) * (cos((w_R + w_v) * t[i]) + cos(w_R * t[i]))
@@ -331,6 +334,7 @@ void Propagate(molecule* mol, parameters* params)
 
     cmplx* L_func = (cmplx*)calloc(nDIM * nDIM, sizeof(cmplx));
     copy_mat(rho_0, L_func, nDIM);
+    copy_mat(rho_0, mol->rho, nDIM);
 
     for(i=0; i<timeDIM; i++)
     {
@@ -362,19 +366,64 @@ void Propagate(molecule* mol, parameters* params)
 }
 
 
+double nloptJ(unsigned N, const double *opt_params, double *grad_J, void *nloptJ_params)
+{
+
+    mol_system** Ensemble = (mol_system**)nloptJ_params;
+
+    parameters* params = (*Ensemble)->params;
+    molecule* moleculeA = (*Ensemble)->moleculeA;
+    molecule* moleculeB = (*Ensemble)->moleculeB;
+
+    params->A_R = opt_params[0];
+    params->A_EE = opt_params[1];
+
+    CalculateField(params->field_out, params);
+    Propagate(moleculeA, params);
+    Propagate(moleculeB, params);
+
+    int nDIM = params->nDIM;
+    printf(" %12.12lf \n", creal(moleculeA->rho[2*nDIM + 2] + moleculeA->rho[3*nDIM + 3] - moleculeB->rho[2*nDIM + 2] - moleculeB->rho[3*nDIM + 3]));
+    return creal(moleculeA->rho[2*nDIM + 2] + moleculeA->rho[3*nDIM + 3] - moleculeB->rho[2*nDIM + 2] - moleculeB->rho[3*nDIM + 3]);
+
+    free(params);
+    free(moleculeA);
+    free(moleculeB);
+    free(Ensemble);
+
+}
+
+
 cmplx* RamanControlFunction(molecule* molA, molecule* molB, parameters* func_params)
 //------------------------------------------------------------//
 //    GETTING rho(T) FROM rho(0) USING PROPAGATE FUNCTION     //
 //------------------------------------------------------------//
 {
-    mol_system Ensemble;
-    Ensemble.moleculeA = molA;
-    Ensemble.moleculeB = molB;
-    Ensemble.params = func_params;
-    int nDIM = Ensemble.params->nDIM;
+    mol_system* Ensemble;
+    Ensemble->moleculeA = molA;
+    Ensemble->moleculeB = molB;
+    Ensemble->params = func_params;
 
-    CalculateField(Ensemble.params->field_out, Ensemble.params);
-    Propagate(Ensemble.moleculeA, Ensemble.params);
-    Propagate(Ensemble.moleculeB, Ensemble.params);
+    nlopt_opt opt;
 
+    double lower_bounds[2] = { 0.00005, 0.00005 };
+    double upper_bounds[2] = { 0.00100, 0.00100 };
+
+    opt = nlopt_create(NLOPT_LN_COBYLA, 2);
+    nlopt_set_lower_bounds(opt, lower_bounds);
+    nlopt_set_upper_bounds(opt, upper_bounds);
+    nlopt_set_max_objective(opt, nloptJ, (void*)&Ensemble);
+    nlopt_set_xtol_rel(opt, 1e-12);
+
+    double x[2] = { 0.0005, 0.0005 };
+    double maxf;
+
+    if (nlopt_optimize(opt, x, &maxf) < 0) {
+        printf("nlopt failed!\n");
+    }
+    else {
+        printf("found minimum at f(%g,%g) = %0.10g\n", x[0], x[1], maxf);
+    }
+
+    nlopt_destroy(opt);
 }

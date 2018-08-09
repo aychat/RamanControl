@@ -127,12 +127,12 @@ if __name__ == '__main__':
     )
 
     molecule1 = RhoPropagate(params, **FourLevel)
-    molecule1.propagate(5e-4, 5., 1e-3, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
+    molecule1.propagate(0.000576214013, 5., 0.000367371308, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
 
     molecule1_excited_pop = np.diag(molecule1.rho.real)[2:].sum()
     molecule2 = RhoPropagate(params, **FourLevel)
     molecule2.energies = np.array((0.000, 0.09439, 1.94655, 2.02094)) * params.energy_factor
-    molecule2.propagate(5e-4, 5., 1e-3, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
+    molecule2.propagate(0.000576214013, 5., 0.000367371308, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
     molecule2_excited_pop = np.diag(molecule2.rho.real)[2:].sum()
 
     print '\n', molecule1.rho.real

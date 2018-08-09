@@ -77,14 +77,13 @@ class RamanControl:
         func_params.field_out = self.field_t.ctypes.data_as(POINTER(c_complex))
 
         RamanControlFunction(molA, molB, func_params)
-        # RamanControlFunction(molA, molB, func_params)
         return
 
 
 if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
-
+    import time
     np.set_printoptions(precision=4)
     energy_factor = 1. / 27.211385
     time_factor = .02418
@@ -155,7 +154,9 @@ if __name__ == '__main__':
     molA.dyn_rho = molecules.dyn_rhoA.ctypes.data_as(POINTER(c_complex))
     molB.dyn_rho = molecules.dyn_rhoB.ctypes.data_as(POINTER(c_complex))
 
+    start = time.time()
     molecules.call_raman_control_function(molA, molB, params)
+    print time.time() - start
 
     fig, axes = plt.subplots(nrows=5, ncols=1, sharex=True)
     axes[0].plot(molecules.time, molecules.field_t.real, 'r')
