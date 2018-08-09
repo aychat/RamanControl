@@ -63,7 +63,7 @@ except OSError:
     raise NotImplementedError(
         """
         The library is absent. You must compile the C shared library using the commands:
-        gcc -O3 -shared -o RamanControl.so RamanControl.c -lm -fopenmp -fPIC
+        gcc -O3 -shared -o RamanAssistedControl.so RamanAssistedControl.c -lnlopt -lm -fopenmp -fPIC
         """
     )
 
