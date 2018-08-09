@@ -38,7 +38,9 @@ class Parameters(Structure):
         ('w_EE', c_double),
         ('nDIM', c_int),
         ('timeDIM', c_int),
-        ('field_out', POINTER(c_complex))
+        ('field_out', POINTER(c_complex)),
+        ('field_grad_A_R', POINTER(c_complex)),
+        ('field_grad_A_EE', POINTER(c_complex))
     ]
 
 
@@ -52,7 +54,8 @@ class Molecule(Structure):
         ('gamma_pure_dephasing', POINTER(c_double)),
         ('mu', POINTER(c_complex)),
         ('rho', POINTER(c_complex)),
-        ('dyn_rho', POINTER(c_complex))
+        ('dyn_rho', POINTER(c_complex)),
+        ('g_t_t', POINTER(c_complex))
     ]
 
 

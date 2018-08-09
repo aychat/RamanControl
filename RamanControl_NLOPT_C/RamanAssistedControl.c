@@ -26,6 +26,9 @@ typedef struct parameters{
     int timeDIM;
 
     cmplx* field_out;
+    cmplx* field_grad_A_R;
+    cmplx* field_grad_A_EE;
+
 } parameters;
 
 typedef struct molecule{
@@ -36,6 +39,7 @@ typedef struct molecule{
 
     cmplx* rho;
     cmplx* dyn_rho;
+    cmplx* g_t_t;
 } molecule;
 
 typedef struct mol_system{
@@ -98,6 +102,20 @@ void print_double_mat(double *A, int nDIM)
 	}
 	printf("\n\n");
 }
+
+void print_double_vec(double *A, int vecDIM)
+//----------------------------------------------------//
+// 	          PRINTS A COMPLEX MATRIX                 //
+//----------------------------------------------------//
+{
+	int i;
+	for(i=0; i<vecDIM; i++)
+	{
+		printf("%3.3e  ", A[i]);
+	}
+	printf("\n");
+}
+
 
 void copy_mat(const cmplx *A, cmplx *B, int nDIM)
 //----------------------------------------------------//
@@ -190,9 +208,9 @@ void multiply_complex_mat(cmplx *product, const cmplx *A, const cmplx *B, const 
 
 
 void commute_complex_mat(cmplx *commutator, const cmplx *A, const cmplx *B, const int nDIM)
-//----------------------------------------------------//
-// 	          RETURNS [A, B] MATRIX COMMUTATOR        //
-//----------------------------------------------------//
+//-----------------------------------------------------------------//
+// 	          RETURNS commutator = [A, B] MATRIX COMMUTATOR        //
+//-----------------------------------------------------------------//
 {
     for (int i=0; i<nDIM; i++)
     {
@@ -229,13 +247,34 @@ double complex_max_element(cmplx *A, int nDIM)
 }
 
 
+double integrate_Simpsons(double *f, double Tmin, double Tmax, int Tsteps)
+{
+    double dt = (Tmax - Tmin) / Tsteps;
+    double integral = 0.0;
+    int k;
+
+    for(int tau=0; tau<Tsteps; tau++)
+    {
+        if(tau == 0) k=1;
+	    else if(tau == (Tsteps-1)) k=1;
+	    else if( tau % 2 == 0) k=2;
+        else if( tau % 2 == 1) k=4;
+
+        integral += f[tau] * k;
+    }
+
+    integral *= dt/3.;
+    return integral;
+}
+
+
 //====================================================================================================================//
 //                                                                                                                    //
 //                                         FUNCTIONS FOR PROPAGATION STEP                                             //
 //                                                                                                                    //
 //====================================================================================================================//
 
-void CalculateField(cmplx* field, parameters* params)
+void CalculateField(cmplx* field, cmplx* d_field_A_R, cmplx* d_field_A_EE, parameters* params)
 //----------------------------------------------------//
 //   RETURNS THE ENTIRE FIELD AS A FUNCTION OF TIME   //
 //----------------------------------------------------//
@@ -263,6 +302,9 @@ void CalculateField(cmplx* field, parameters* params)
     {
         field[i] = A_R * exp(-pow(t[i] - t0_R, 2) / (2. * pow(width_R, 2))) * (cos((w_R + w_v) * t[i]) + cos(w_R * t[i]))
         + A_EE * exp(-pow(t[i] - t0_EE, 2) / (2. * pow(width_EE, 2))) * cos(w_EE * t[i]);
+
+        d_field_A_R[i] = exp(-pow(t[i] - t0_R, 2) / (2. * pow(width_R, 2))) * (cos((w_R + w_v) * t[i]) + cos(w_R * t[i]));
+        d_field_A_EE[i] = exp(-pow(t[i] - t0_EE, 2) / (2. * pow(width_EE, 2))) * cos(w_EE * t[i]);
     }
 }
 
@@ -388,24 +430,21 @@ double nloptJ(unsigned N, const double *opt_params, double *grad_J, void *nloptJ
     parameters* params = (*Ensemble)->params;
     molecule* moleculeA = (*Ensemble)->moleculeA;
     molecule* moleculeB = (*Ensemble)->moleculeB;
+    double J;
 
     params->A_R = opt_params[0];
     params->A_EE = opt_params[1];
 
-    CalculateField(params->field_out, params);
+    CalculateField(params->field_out, params->field_grad_A_R, params->field_grad_A_EE, params);
     Propagate(moleculeA, params);
     Propagate(moleculeB, params);
 
     int nDIM = params->nDIM;
 
-    printf("%12.12lf %12.12lf %12.12lf \n", params->A_R, params->A_EE, calculateJ(moleculeA, moleculeB, nDIM));
-    return calculateJ(moleculeA, moleculeB, nDIM);
+    J = calculateJ(moleculeA, moleculeB, nDIM);
+    printf("%12.12lf %12.12lf %12.12lf \n", params->A_R, params->A_EE, J);
 
-    free(params);
-    free(moleculeA);
-    free(moleculeB);
-    free(Ensemble);
-
+    return J;
 }
 
 
@@ -428,7 +467,7 @@ cmplx* RamanControlFunction(molecule* molA, molecule* molB, parameters* func_par
     nlopt_set_lower_bounds(opt, lower_bounds);
     nlopt_set_upper_bounds(opt, upper_bounds);
     nlopt_set_max_objective(opt, nloptJ, (void*)&Ensemble);
-    nlopt_set_xtol_rel(opt, 1e-12);
+    nlopt_set_xtol_rel(opt, 1.E-8);
 
     double x[2] = { 0.0005, 0.0005 };
     double maxf;

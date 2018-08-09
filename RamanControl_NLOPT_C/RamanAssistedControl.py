@@ -33,6 +33,8 @@ class RamanControl:
 
         self.time = np.linspace(-params.timeAMP, params.timeAMP, params.timeDIM)[:, np.newaxis]
         self.field_t = np.empty(params.timeDIM, dtype=np.complex)
+        self.field_grad_A_R = np.empty(params.timeDIM, dtype=np.complex)
+        self.field_grad_A_EE = np.empty(params.timeDIM, dtype=np.complex)
 
         self.gamma_decay = np.ascontiguousarray(self.gamma_decay)
         self.gamma_pure_dephasing = np.ascontiguousarray(self.gamma_pure_dephasing)
@@ -42,6 +44,8 @@ class RamanControl:
         self.rhoB = np.ascontiguousarray(params.rho_0.copy())
         self.energies_A = np.ascontiguousarray(self.energies_A)
         self.energies_B = np.ascontiguousarray(self.energies_B)
+        self.g_t_t_A = np.ascontiguousarray(np.empty((4, 4)), dtype=np.complex)
+        self.g_t_t_B = np.ascontiguousarray(np.empty((4, 4)), dtype=np.complex)
         N = len(self.energies_A)
         self.dyn_rhoA = np.ascontiguousarray(np.zeros((N * (N + 3) / 2, params.timeDIM), dtype=np.complex))
         self.dyn_rhoB = np.ascontiguousarray(np.zeros((N * (N + 3) / 2, params.timeDIM), dtype=np.complex))
@@ -75,6 +79,8 @@ class RamanControl:
         func_params.nDIM = len(self.energies_A)
         func_params.timeDIM = len(self.time)
         func_params.field_out = self.field_t.ctypes.data_as(POINTER(c_complex))
+        func_params.field_grad_A_R = self.field_grad_A_R.ctypes.data_as(POINTER(c_complex))
+        func_params.field_grad_A_EE = self.field_grad_A_EE.ctypes.data_as(POINTER(c_complex))
 
         RamanControlFunction(molA, molB, func_params)
         return
@@ -153,12 +159,14 @@ if __name__ == '__main__':
     molB.rho = molecules.rhoB.ctypes.data_as(POINTER(c_complex))
     molA.dyn_rho = molecules.dyn_rhoA.ctypes.data_as(POINTER(c_complex))
     molB.dyn_rho = molecules.dyn_rhoB.ctypes.data_as(POINTER(c_complex))
+    molA.g_t_t = molecules.g_t_t_A.ctypes.data_as(POINTER(c_complex))
+    molB.g_t_t = molecules.g_t_t_B.ctypes.data_as(POINTER(c_complex))
 
     start = time.time()
     molecules.call_raman_control_function(molA, molB, params)
     print time.time() - start
 
-    fig, axes = plt.subplots(nrows=5, ncols=1, sharex=True)
+    fig1, axes = plt.subplots(nrows=5, ncols=1, sharex=True)
     axes[0].plot(molecules.time, molecules.field_t.real, 'r')
 
     axes[1].plot(molecules.time, molecules.dyn_rhoA[0, :], label='1')
@@ -191,5 +199,10 @@ if __name__ == '__main__':
     print molecules.rhoB.real, "\n"
 
     print np.diag(molecules.rhoA.real)[2:].sum() - np.diag(molecules.rhoB.real)[2:].sum()
+
+    fig2, axes = plt.subplots(nrows=3, ncols=1, sharex=True)
+    axes[0].plot(molecules.time, molecules.field_t.real, 'k')
+    axes[1].plot(molecules.time, molecules.field_grad_A_R.real, 'b')
+    axes[2].plot(molecules.time, molecules.field_grad_A_EE.real, 'r')
 
     plt.show()
