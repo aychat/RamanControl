@@ -163,15 +163,15 @@ if __name__ == '__main__':
         moleculeB.energies = np.array((0.000, 0.09439, 1.94655, 2.02094)) * params.energy_factor
 
         moleculeA.propagate(
-            x[0], x[1], x[2], x[3],
-            0.07439 * params.energy_factor,
-            (1.94655 - 0.07439) * params.energy_factor,
+            x[0], x[1], x[2], x[3], x[4], x[5],
+            # 0.07439 * params.energy_factor,
+            # (1.94655 - 0.07439) * params.energy_factor,
             params
         )
         moleculeB.propagate(
-            x[0], x[1], x[2], x[3],
-            0.07439 * params.energy_factor,
-            (1.94655 - 0.07439) * params.energy_factor,
+            x[0], x[1], x[2], x[3], x[4], x[5],
+            # 0.07439 * params.energy_factor,
+            # (1.94655 - 0.07439) * params.energy_factor,
             params
         )
 
@@ -180,14 +180,14 @@ if __name__ == '__main__':
 
         return moleculeA_excited_pop - moleculeB_excited_pop
 
-    opt = nlopt.opt(nlopt.LN_COBYLA, 4)             # LN stands for Local No-derivative
-    opt.set_lower_bounds([1e-5, 5., 1e-5, 30.])
-    opt.set_upper_bounds([1e-3, 20., 1e-3, 75.])
+    opt = nlopt.opt(nlopt.LN_COBYLA, 6)             # LN stands for Local No-derivative
+    opt.set_lower_bounds([1e-5, 5., 1e-5, 30., 0.07439 * params.energy_factor * 0.85, (1.94655 - 0.07439) * params.energy_factor * 0.99])
+    opt.set_upper_bounds([1e-3, 20., 1e-3, 75., 0.07439 * params.energy_factor * 1.15, (1.94655 - 0.07439) * params.energy_factor * 1.1])
     opt.set_max_objective(rho_cost_function)
     opt.set_xtol_rel(1e-6)
-    x = opt.optimize([1e-3, 10., 1e-3, 32.5])
+    x = opt.optimize([1e-3, 10., 1e-3, 32.5, 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor])
     maxf = opt.last_optimum_value()
-    print("optimum at ", x[0], x[1], x[2], x[3])
+    print("optimum at ", x[0], x[1], x[2], x[3], x[4], x[5])
     print("maximum value = ", maxf)
     print("result code = ", opt.last_optimize_result())
 

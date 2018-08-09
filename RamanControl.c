@@ -221,7 +221,7 @@ void Propagate(cmplx* out, cmplx* dyn_rho, cmplx* dyn_coh, const cmplx* field, c
             scale_mat(L_func, dt/(j+1), nDIM);
             add_mat(L_func, out, nDIM);
             j+=1;
-        }while(complex_max_element(L_func, nDIM) > 1.0E-12);
+        }while(complex_max_element(L_func, nDIM) > 1.0E-8);
 
         for(k=0; k<nDIM; k++)
         {
