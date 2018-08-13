@@ -2,25 +2,33 @@ from multiprocessing import Pool
 import numpy as np
 
 
-def f(args):
+class ADict(dict):
+    """
+    Dictionary where you can access keys as attributes
+    """
+    def __getattr__(self, item):
+        try:
+            return self[item]
+        except KeyError:
+            dict.__getattribute__(self, item)
+
+
+def f(args1, args2, args):
     x, y = args
-    return x*x
+    print x*x + args1.a - args2.b
+    return
 
 
 if __name__ == '__main__':
+    params = ADict(
+        a=1.,
+        b=2.
+    )
 
-    from itertools import product
+    from functools import partial
 
     X = np.linspace(-1, 1, 10)
     Y = np.linspace(-1, 1, 10)
 
     p = Pool(4)
-    results = p.map(f, product(X, Y))
-
-    results = np.array(results)
-    results = results.reshape(X.size, Y.size).T
-
-    import matplotlib.pyplot as plt
-
-    plt.imshow(results)
-    plt.show()
+    results = p.map(partial(f, params, params), zip(X, Y))
