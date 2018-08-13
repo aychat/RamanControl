@@ -27,20 +27,29 @@ class Parameters(Structure):
     _fields_ = [
         ('time', POINTER(c_double)),
         ('rho_0', POINTER(c_complex)),
+
         ('A_R', c_double),
         ('width_R', c_double),
         ('t0_R', c_double),
+
         ('A_EE', c_double),
         ('width_EE', c_double),
         ('t0_EE', c_double),
+
         ('w_R', c_double),
         ('w_v', c_double),
         ('w_EE', c_double),
+
         ('nDIM', c_int),
         ('timeDIM', c_int),
+
         ('field_out', POINTER(c_complex)),
         ('field_grad_A_R', POINTER(c_complex)),
-        ('field_grad_A_EE', POINTER(c_complex))
+        ('field_grad_A_EE', POINTER(c_complex)),
+
+        ('lower_bounds', POINTER(c_double)),
+        ('upper_bounds', POINTER(c_double)),
+        ('guess', POINTER(c_double)),
     ]
 
 
@@ -55,7 +64,7 @@ class Molecule(Structure):
         ('mu', POINTER(c_complex)),
         ('rho', POINTER(c_complex)),
         ('dyn_rho', POINTER(c_complex)),
-        ('g_t_t', POINTER(c_complex))
+        ('g_tau_t', POINTER(c_complex))
     ]
 
 

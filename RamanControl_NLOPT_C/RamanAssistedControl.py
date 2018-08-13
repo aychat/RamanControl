@@ -31,7 +31,7 @@ class RamanControl:
             else:
                 setattr(self, name, value)
 
-        self.time = np.linspace(-params.timeAMP, params.timeAMP, params.timeDIM)[:, np.newaxis]
+        self.time = np.linspace(-params.timeAMP, params.timeAMP, params.timeDIM)
         self.field_t = np.empty(params.timeDIM, dtype=np.complex)
         self.field_grad_A_R = np.empty(params.timeDIM, dtype=np.complex)
         self.field_grad_A_EE = np.empty(params.timeDIM, dtype=np.complex)
@@ -44,13 +44,14 @@ class RamanControl:
         self.rhoB = np.ascontiguousarray(params.rho_0.copy())
         self.energies_A = np.ascontiguousarray(self.energies_A)
         self.energies_B = np.ascontiguousarray(self.energies_B)
-        self.g_t_t_A = np.ascontiguousarray(np.empty((4, 4)), dtype=np.complex)
-        self.g_t_t_B = np.ascontiguousarray(np.empty((4, 4)), dtype=np.complex)
+        self.g_tau_t_A = np.ascontiguousarray(np.empty((4, 4)), dtype=np.complex)
+        self.g_tau_t_B = np.ascontiguousarray(np.empty((4, 4)), dtype=np.complex)
+
         N = len(self.energies_A)
         self.dyn_rhoA = np.ascontiguousarray(np.zeros((N * (N + 3) / 2, params.timeDIM), dtype=np.complex))
         self.dyn_rhoB = np.ascontiguousarray(np.zeros((N * (N + 3) / 2, params.timeDIM), dtype=np.complex))
 
-    def call_raman_control_function(self, molA, molB, params):
+    def call_raman_control_function(self, molA, molB, params, guess):
         """
 
         """
@@ -78,9 +79,14 @@ class RamanControl:
 
         func_params.nDIM = len(self.energies_A)
         func_params.timeDIM = len(self.time)
+
         func_params.field_out = self.field_t.ctypes.data_as(POINTER(c_complex))
         func_params.field_grad_A_R = self.field_grad_A_R.ctypes.data_as(POINTER(c_complex))
         func_params.field_grad_A_EE = self.field_grad_A_EE.ctypes.data_as(POINTER(c_complex))
+
+        func_params.lower_bounds = params.lower_bounds.ctypes.data_as(POINTER(c_double))
+        func_params.lower_bounds = params.lower_bounds.ctypes.data_as(POINTER(c_double))
+        func_params.guess = guess.ctypes.data_as(POINTER(c_double))
 
         RamanControlFunction(molA, molB, func_params)
         return
@@ -90,6 +96,10 @@ if __name__ == '__main__':
 
     import matplotlib.pyplot as plt
     import time
+    from multiprocessing import Pool
+    from itertools import *
+    from functools import partial
+
     np.set_printoptions(precision=4)
     energy_factor = 1. / 27.211385
     time_factor = .02418
@@ -115,10 +125,21 @@ if __name__ == '__main__':
     gamma_pure_dephasing[0, 1] = vibrational_dephasing
     gamma_pure_dephasing[2, 3] = vibrational_dephasing
 
+    lower_bounds = np.asarray([0.00005, 0.00005])
+    upper_bounds = np.asarray([0.00100, 0.00100])
+    guess = np.asarray(
+        [np.random.uniform(lower_bounds[i], upper_bounds[i], 10) for i in range(len(upper_bounds))]
+    )
+
+    print lower_bounds
+    print upper_bounds
+    print guess[0]
+    print guess[1]
+
     params = ADict(
         energy_factor=energy_factor,
         time_factor=time_factor,
-        timeDIM=100000,
+        timeDIM=40000,
         timeAMP=20000.,
 
         A_R=5e-4,
@@ -132,7 +153,11 @@ if __name__ == '__main__':
         w_R=1.4 * energy_factor,
         w_v=energies_A[1],
         w_EE=(energies_A[2] - energies_A[1]),
-        rho_0=rho_0
+        rho_0=rho_0,
+
+        lower_bounds=lower_bounds,
+        upper_bounds=upper_bounds,
+        guess=guess
     )
 
     FourLevels = dict(
@@ -159,11 +184,15 @@ if __name__ == '__main__':
     molB.rho = molecules.rhoB.ctypes.data_as(POINTER(c_complex))
     molA.dyn_rho = molecules.dyn_rhoA.ctypes.data_as(POINTER(c_complex))
     molB.dyn_rho = molecules.dyn_rhoB.ctypes.data_as(POINTER(c_complex))
-    molA.g_t_t = molecules.g_t_t_A.ctypes.data_as(POINTER(c_complex))
-    molB.g_t_t = molecules.g_t_t_B.ctypes.data_as(POINTER(c_complex))
+    molA.g_tau_t = molecules.g_tau_t_A.ctypes.data_as(POINTER(c_complex))
+    molB.g_tau_t = molecules.g_tau_t_B.ctypes.data_as(POINTER(c_complex))
 
     start = time.time()
-    molecules.call_raman_control_function(molA, molB, params)
+    molecules.call_raman_control_function(molA, molB, params, guess)
+
+    # p = Pool(8)
+    # result = p.map(partial(molecules.call_raman_control_function, molA, molB, params), zip(guess[0], guess[1]))
+
     print time.time() - start
 
     fig1, axes = plt.subplots(nrows=5, ncols=1, sharex=True)
@@ -195,10 +224,10 @@ if __name__ == '__main__':
     axes[4].plot(molecules.time, molecules.dyn_rhoB[8, :])
     axes[4].plot(molecules.time, molecules.dyn_rhoB[9, :])
 
+    print np.diag(molecules.rhoA.real)[2:].sum() - np.diag(molecules.rhoB.real)[2:].sum()
+
     print molecules.rhoA.real, "\n"
     print molecules.rhoB.real, "\n"
-
-    print np.diag(molecules.rhoA.real)[2:].sum() - np.diag(molecules.rhoB.real)[2:].sum()
 
     fig2, axes = plt.subplots(nrows=3, ncols=1, sharex=True)
     axes[0].plot(molecules.time, molecules.field_t.real, 'k')

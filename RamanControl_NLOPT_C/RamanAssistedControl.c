@@ -29,6 +29,10 @@ typedef struct parameters{
     cmplx* field_grad_A_R;
     cmplx* field_grad_A_EE;
 
+    double* lower_bounds;
+    double* upper_bounds;
+    double* guess;
+
 } parameters;
 
 typedef struct molecule{
@@ -39,7 +43,7 @@ typedef struct molecule{
 
     cmplx* rho;
     cmplx* dyn_rho;
-    cmplx* g_t_t;
+    cmplx* g_tau_t;
 } molecule;
 
 typedef struct mol_system{
@@ -366,6 +370,7 @@ void Propagate(molecule* mol, parameters* params)
 //----------------------------------------------------------------------//
 {
     int i, j, k;
+    int tau_index, t_index;
     int nDIM = params->nDIM;
     int timeDIM = params->timeDIM;
 
@@ -379,37 +384,38 @@ void Propagate(molecule* mol, parameters* params)
 
     double dt = time[1] - time[0];
 
-    cmplx* L_func = (cmplx*)calloc(nDIM * nDIM, sizeof(cmplx));
-    copy_mat(rho_0, L_func, nDIM);
+    cmplx* L_rho_func = (cmplx*)calloc(nDIM * nDIM, sizeof(cmplx));
+    copy_mat(rho_0, L_rho_func, nDIM);
     copy_mat(rho_0, mol->rho, nDIM);
 
-    for(i=0; i<timeDIM; i++)
+    for(t_index=0; t_index<timeDIM; t_index++)
     {
-        j=0;
+        k=1;
         do
         {
-            L_operate(L_func, field[i], mol, params);
-            scale_mat(L_func, dt/(j+1), nDIM);
-            add_mat(L_func, mol->rho, nDIM);
-            j+=1;
-        }while(complex_max_element(L_func, nDIM) > 1.0E-8);
+            L_operate(L_rho_func, field[t_index], mol, params);
+            scale_mat(L_rho_func, dt/k, nDIM);
+            add_mat(L_rho_func, mol->rho, nDIM);
+            k+=1;
+        }while(complex_max_element(L_rho_func, nDIM) > 1.0E-8);
 
-        for(k=0; k<nDIM; k++)
+        for(i=0; i<nDIM; i++)
         {
-            mol->dyn_rho[k * timeDIM + i] = mol->rho[k * nDIM + k];
+            mol->dyn_rho[i * timeDIM + t_index] = mol->rho[i * nDIM + i];
         }
 
-        mol->dyn_rho[4 * timeDIM + i] = mol->rho[0 * nDIM + 1];
-        mol->dyn_rho[5 * timeDIM + i] = mol->rho[0 * nDIM + 2];
-        mol->dyn_rho[6 * timeDIM + i] = mol->rho[0 * nDIM + 3];
-        mol->dyn_rho[7 * timeDIM + i] = mol->rho[1 * nDIM + 2];
-        mol->dyn_rho[8 * timeDIM + i] = mol->rho[1 * nDIM + 3];
-        mol->dyn_rho[9 * timeDIM + i] = mol->rho[2 * nDIM + 3];
+        mol->dyn_rho[4 * timeDIM + t_index] = mol->rho[0 * nDIM + 1];
+        mol->dyn_rho[5 * timeDIM + t_index] = mol->rho[0 * nDIM + 2];
+        mol->dyn_rho[6 * timeDIM + t_index] = mol->rho[0 * nDIM + 3];
+        mol->dyn_rho[7 * timeDIM + t_index] = mol->rho[1 * nDIM + 2];
+        mol->dyn_rho[8 * timeDIM + t_index] = mol->rho[1 * nDIM + 3];
+        mol->dyn_rho[9 * timeDIM + t_index] = mol->rho[2 * nDIM + 3];
 
-        copy_mat(mol->rho, L_func, nDIM);
+        copy_mat(mol->rho, L_rho_func, nDIM);
+
     }
 
-    free(L_func);
+    free(L_rho_func);
 }
 
 
@@ -460,8 +466,8 @@ cmplx* RamanControlFunction(molecule* molA, molecule* molB, parameters* func_par
 
     nlopt_opt opt;
 
-    double lower_bounds[2] = { 0.00005, 0.00005 };
-    double upper_bounds[2] = { 0.00100, 0.00100 };
+    double *lower_bounds = func_params->lower_bounds;
+    double *upper_bounds = func_params->upper_bounds;
 
     opt = nlopt_create(NLOPT_LN_COBYLA, 2);
     nlopt_set_lower_bounds(opt, lower_bounds);
@@ -469,7 +475,8 @@ cmplx* RamanControlFunction(molecule* molA, molecule* molB, parameters* func_par
     nlopt_set_max_objective(opt, nloptJ, (void*)&Ensemble);
     nlopt_set_xtol_rel(opt, 1.E-8);
 
-    double x[2] = { 0.0005, 0.0005 };
+    double x[2] =  {func_params->guess[0], func_params->guess[1]};
+    print_double_vec(func_params->guess, 2);
     double maxf;
 
     if (nlopt_optimize(opt, x, &maxf) < 0) {
