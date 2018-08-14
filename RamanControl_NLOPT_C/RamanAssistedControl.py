@@ -1,6 +1,7 @@
 import numpy as np
 from types import MethodType, FunctionType
 from RamanAssistedControl_wrapper import *
+from ctypes import c_int, c_double, POINTER, Structure
 
 
 class ADict(dict):
@@ -48,8 +49,8 @@ class RamanControl:
         self.g_tau_t_B = np.ascontiguousarray(np.empty((4, 4)), dtype=np.complex)
 
         N = len(self.energies_A)
-        self.dyn_rhoA = np.ascontiguousarray(np.zeros((N * (N + 3) / 2, params.timeDIM), dtype=np.complex))
-        self.dyn_rhoB = np.ascontiguousarray(np.zeros((N * (N + 3) / 2, params.timeDIM), dtype=np.complex))
+        self.dyn_rhoA = np.ascontiguousarray(np.zeros((int(N * (N + 3) / 2), params.timeDIM), dtype=np.complex))
+        self.dyn_rhoB = np.ascontiguousarray(np.zeros((int(N * (N + 3) / 2), params.timeDIM), dtype=np.complex))
 
     def call_raman_control_function(self, molA, molB, params, guess):
         """
@@ -131,10 +132,10 @@ if __name__ == '__main__':
         [np.random.uniform(lower_bounds[i], upper_bounds[i], 10) for i in range(len(upper_bounds))]
     )
 
-    print lower_bounds
-    print upper_bounds
-    print guess[0]
-    print guess[1]
+    print(lower_bounds)
+    print(upper_bounds)
+    print(guess[0])
+    print(guess[1])
 
     params = ADict(
         energy_factor=energy_factor,
@@ -193,7 +194,7 @@ if __name__ == '__main__':
     # p = Pool(8)
     # result = p.map(partial(molecules.call_raman_control_function, molA, molB, params), zip(guess[0], guess[1]))
 
-    print time.time() - start
+    print(time.time() - start)
 
     fig1, axes = plt.subplots(nrows=5, ncols=1, sharex=True)
     axes[0].plot(molecules.time, molecules.field_t.real, 'r')
@@ -224,10 +225,10 @@ if __name__ == '__main__':
     axes[4].plot(molecules.time, molecules.dyn_rhoB[8, :])
     axes[4].plot(molecules.time, molecules.dyn_rhoB[9, :])
 
-    print np.diag(molecules.rhoA.real)[2:].sum() - np.diag(molecules.rhoB.real)[2:].sum()
+    print(np.diag(molecules.rhoA.real)[2:].sum() - np.diag(molecules.rhoB.real)[2:].sum())
 
-    print molecules.rhoA.real, "\n"
-    print molecules.rhoB.real, "\n"
+    print(molecules.rhoA.real, "\n")
+    print(molecules.rhoB.real, "\n")
 
     fig2, axes = plt.subplots(nrows=3, ncols=1, sharex=True)
     axes[0].plot(molecules.time, molecules.field_t.real, 'k')
