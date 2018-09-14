@@ -83,7 +83,7 @@ class RhoPropagate:
 if __name__ == '__main__':
 
     from RamanControlParameters import plot_Raman_Assisted_Control
-    import nlopt
+    # import nlopt
     import time
 
     np.set_printoptions(precision=4)
@@ -127,17 +127,17 @@ if __name__ == '__main__':
     )
 
     molecule1 = RhoPropagate(params, **FourLevel)
-    molecule1.propagate(0.000576214013, 5., 0.000367371308, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
+    molecule1.propagate(0.00042141, 15., 0.000287374, 20.8374, 0.00312222, 0.0722829, params)
 
     molecule1_excited_pop = np.diag(molecule1.rho.real)[2:].sum()
     molecule2 = RhoPropagate(params, **FourLevel)
-    molecule2.energies = np.array((0.000, 0.09439, 1.94655, 2.02094)) * params.energy_factor
-    molecule2.propagate(0.000576214013, 5., 0.000367371308, 35., 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor, params)
+    molecule2.energies = np.array((0.000, 0.07639, 1.92655, 2.02094)) * params.energy_factor
+    molecule2.propagate(0.00042141, 15., 0.000287374, 20.8374, 0.00312222, 0.0722829, params)
     molecule2_excited_pop = np.diag(molecule2.rho.real)[2:].sum()
 
-    print '\n', molecule1.rho.real
-    print '\n', molecule2.rho.real
-    print '\n', molecule1_excited_pop - molecule2_excited_pop
+    print('\n', molecule1.rho.real)
+    print('\n', molecule2.rho.real)
+    print('\n', molecule1_excited_pop - molecule2_excited_pop)
 
     plot_Raman_Assisted_Control(molecule1, molecule2, params)
     del molecule1
@@ -180,15 +180,15 @@ if __name__ == '__main__':
 
         return moleculeA_excited_pop - moleculeB_excited_pop
 
-    opt = nlopt.opt(nlopt.LN_COBYLA, 6)             # LN stands for Local No-derivative
-    opt.set_lower_bounds([1e-5, 5., 1e-5, 30., 0.07439 * params.energy_factor * 0.85, (1.94655 - 0.07439) * params.energy_factor * 0.99])
-    opt.set_upper_bounds([1e-3, 20., 1e-3, 75., 0.07439 * params.energy_factor * 1.15, (1.94655 - 0.07439) * params.energy_factor * 1.1])
-    opt.set_max_objective(rho_cost_function)
-    opt.set_xtol_rel(1e-6)
-    x = opt.optimize([1e-3, 10., 1e-3, 32.5, 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor])
-    maxf = opt.last_optimum_value()
-    print("optimum at ", x[0], x[1], x[2], x[3], x[4], x[5])
-    print("maximum value = ", maxf)
-    print("result code = ", opt.last_optimize_result())
+    # opt = nlopt.opt(nlopt.LN_COBYLA, 6)             # LN stands for Local No-derivative
+    # opt.set_lower_bounds([1e-5, 5., 1e-5, 30., 0.07439 * params.energy_factor * 0.85, (1.94655 - 0.07439) * params.energy_factor * 0.99])
+    # opt.set_upper_bounds([1e-3, 20., 1e-3, 75., 0.07439 * params.energy_factor * 1.15, (1.94655 - 0.07439) * params.energy_factor * 1.1])
+    # opt.set_max_objective(rho_cost_function)
+    # opt.set_xtol_rel(1e-6)
+    # x = opt.optimize([1e-3, 10., 1e-3, 32.5, 0.07439 * params.energy_factor, (1.94655 - 0.07439) * params.energy_factor])
+    # maxf = opt.last_optimum_value()
+    # print("optimum at ", x[0], x[1], x[2], x[3], x[4], x[5])
+    # print("maximum value = ", maxf)
+    # print("result code = ", opt.last_optimize_result())
 
-    print time.time() - start
+    # print time.time() - start

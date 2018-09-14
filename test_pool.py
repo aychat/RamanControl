@@ -15,14 +15,16 @@ class ADict(dict):
 
 def f(args1, args2, args):
     x, y = args
-    print x*x + args1.a - args2.b
+    print(x*x + args1.a - args2.b)
     return
 
 
 if __name__ == '__main__':
     params = ADict(
         a=1.,
-        b=2.
+        b=2.,
+        c=.1,
+        d=.3
     )
 
     from functools import partial

@@ -102,4 +102,3 @@ if __name__ == '__main__':
 
     molecules = RamanControl(**params)
     molecules.call_raman_control_function(params)
-    print params.gamma_pure_dephasing

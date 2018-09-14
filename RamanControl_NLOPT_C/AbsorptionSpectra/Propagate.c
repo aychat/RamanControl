@@ -9,29 +9,8 @@ typedef double complex cmplx;
 typedef struct parameters{
     double* time;
     cmplx* rho_0;
-
-    double A_R;
-    double width_R;
-    double t0_R;
-
-    double A_EE;
-    double width_EE;
-    double t0_EE;
-
-    double w_R;
-    double w_v;
-    double w_EE;
-
     int nDIM;
     int timeDIM;
-
-    cmplx* field_out;
-    cmplx* field_grad_A_R;
-    cmplx* field_grad_A_EE;
-
-    double* lower_bounds;
-    double* upper_bounds;
-    double* guess;
 
 } parameters;
 
@@ -40,17 +19,9 @@ typedef struct molecule{
     double* gamma_decay;
     double* gamma_pure_dephasing;
     cmplx* mu;
-
     cmplx* rho;
     cmplx* dyn_rho;
-    cmplx* g_tau_t;
 } molecule;
-
-typedef struct mol_system{
-    molecule* moleculeA;
-    molecule* moleculeB;
-    parameters* params;
-} mol_system;
 
 
 //====================================================================================================================//
@@ -278,39 +249,6 @@ double integrate_Simpsons(double *f, double Tmin, double Tmax, int Tsteps)
 //                                                                                                                    //
 //====================================================================================================================//
 
-void CalculateField(cmplx* field, cmplx* d_field_A_R, cmplx* d_field_A_EE, parameters* params)
-//----------------------------------------------------//
-//   RETURNS THE ENTIRE FIELD AS A FUNCTION OF TIME   //
-//----------------------------------------------------//
-{
-    int i;
-    int nDIM = params->nDIM;
-    int timeDIM = params->timeDIM;
-
-    double* t = params->time;
-
-    double A_R = params->A_R;
-    double width_R = params->width_R;
-    double t0_R = params->t0_R;
-
-    double A_EE = params->A_EE;
-    double width_EE = params->width_EE;
-    double t0_EE = params->t0_EE;
-
-    double w_R = params->w_R;
-    double w_v = params->w_v;
-    double w_EE = params->w_EE;
-
-
-    for(i=0; i<timeDIM; i++)
-    {
-        field[i] = A_R * exp(-pow(t[i] - t0_R, 2) / (2. * pow(width_R, 2))) * (cos((w_R + w_v) * t[i]) + cos(w_R * t[i]))
-        + A_EE * exp(-pow(t[i] - t0_EE, 2) / (2. * pow(width_EE, 2))) * cos(w_EE * t[i]);
-
-        d_field_A_R[i] = exp(-pow(t[i] - t0_R, 2) / (2. * pow(width_R, 2))) * (cos((w_R + w_v) * t[i]) + cos(w_R * t[i]));
-        d_field_A_EE[i] = exp(-pow(t[i] - t0_EE, 2) / (2. * pow(width_EE, 2))) * cos(w_EE * t[i]);
-    }
-}
 
 void L_operate(cmplx* Qmat, const cmplx field_ti, molecule* mol, parameters* params)
 //----------------------------------------------------//
@@ -338,7 +276,7 @@ void L_operate(cmplx* Qmat, const cmplx field_ti, molecule* mol, parameters* par
 
                     if (m == n)
                     {
-                        Lmat[m * nDIM + m] += gamma_decay[k * nDIM + m] * Qmat[k * nDIM + k];
+//                        Lmat[m * nDIM + m] += gamma_decay[k * nDIM + m] * Qmat[k * nDIM + k];
                     }
                     else
                     {
@@ -364,7 +302,7 @@ void L_operate(cmplx* Qmat, const cmplx field_ti, molecule* mol, parameters* par
 }
 
 
-void Propagate(molecule* mol, parameters* params)
+double Propagate(molecule* mol, parameters* params, cmplx* field)
 //----------------------------------------------------------------------//
 //    GETTING rho(T)_{k=[3,4]} FROM rho(0) USING PROPAGATE FUNCTION     //
 //----------------------------------------------------------------------//
@@ -374,15 +312,11 @@ void Propagate(molecule* mol, parameters* params)
     int nDIM = params->nDIM;
     int timeDIM = params->timeDIM;
 
-    double *gamma_decay = mol->gamma_decay;
-    double *gamma_pure_dephasing = mol->gamma_pure_dephasing;
-    cmplx *mu = mol->mu;
     cmplx *rho_0 = params->rho_0;
-    double *energies = mol->energies;
     double *time = params->time;
-    cmplx* field = params->field_out;
 
     double dt = time[1] - time[0];
+    printf("%5.5lf \n", dt);
 
     cmplx* L_rho_func = (cmplx*)calloc(nDIM * nDIM, sizeof(cmplx));
     copy_mat(rho_0, L_rho_func, nDIM);
@@ -416,75 +350,7 @@ void Propagate(molecule* mol, parameters* params)
     }
 
     free(L_rho_func);
+    printf("%5.5lf \n", creal(mol->rho[2 * nDIM + 2] + mol->rho[3 * nDIM + 3]));
+    return creal(mol->rho[2 * nDIM + 2] + mol->rho[3 * nDIM + 3]);
 }
 
-
-double calculateJ(molecule* molA, molecule* molB, int nDIM)
-{
-    double molA_excited_pop = creal(molA->rho[2*nDIM + 2] + molA->rho[3*nDIM + 3]);
-    double molB_excited_pop = creal(molB->rho[2*nDIM + 2] + molB->rho[3*nDIM + 3]);
-
-    return molA_excited_pop - molB_excited_pop;
-}
-
-
-double nloptJ(unsigned N, const double *opt_params, double *grad_J, void *nloptJ_params)
-{
-
-    mol_system** Ensemble = (mol_system**)nloptJ_params;
-
-    parameters* params = (*Ensemble)->params;
-    molecule* moleculeA = (*Ensemble)->moleculeA;
-    molecule* moleculeB = (*Ensemble)->moleculeB;
-    double J;
-
-    params->A_R = opt_params[0];
-    params->A_EE = opt_params[1];
-
-    CalculateField(params->field_out, params->field_grad_A_R, params->field_grad_A_EE, params);
-    Propagate(moleculeA, params);
-    Propagate(moleculeB, params);
-
-    int nDIM = params->nDIM;
-
-    J = calculateJ(moleculeA, moleculeB, nDIM);
-    printf("%12.12lf %12.12lf %12.12lf \n", params->A_R, params->A_EE, J);
-
-    return J;
-}
-
-
-cmplx* RamanControlFunction(molecule* molA, molecule* molB, parameters* func_params)
-//------------------------------------------------------------//
-//    GETTING rho(T) FROM rho(0) USING PROPAGATE FUNCTION     //
-//------------------------------------------------------------//
-{
-    mol_system* Ensemble;
-    Ensemble->moleculeA = molA;
-    Ensemble->moleculeB = molB;
-    Ensemble->params = func_params;
-
-    nlopt_opt opt;
-
-    double *lower_bounds = func_params->lower_bounds;
-    double *upper_bounds = func_params->upper_bounds;
-
-    opt = nlopt_create(NLOPT_LN_COBYLA, 2);
-    nlopt_set_lower_bounds(opt, lower_bounds);
-    nlopt_set_upper_bounds(opt, upper_bounds);
-    nlopt_set_max_objective(opt, nloptJ, (void*)&Ensemble);
-    nlopt_set_xtol_rel(opt, 1.E-8);
-
-    double x[2] =  {func_params->guess[0], func_params->guess[1]};
-    print_double_vec(func_params->guess, 2);
-    double maxf;
-
-    if (nlopt_optimize(opt, x, &maxf) < 0) {
-        printf("nlopt failed!\n");
-    }
-    else {
-        printf("found minimum at f(%g,%g) = %0.10g\n", x[0], x[1], maxf);
-    }
-
-    nlopt_destroy(opt);
-}

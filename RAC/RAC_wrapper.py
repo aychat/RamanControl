@@ -94,8 +94,8 @@ def RamanControlFunction(params):
 
     rhoA = np.zeros((nDIM, nDIM), dtype=np.complex)
     rhoB = np.zeros((nDIM, nDIM), dtype=np.complex)
-    dyn_rhoA = np.zeros((nDIM * (nDIM + 3) / 2, params.timeDIM), dtype=np.complex)
-    dyn_rhoB = np.zeros((nDIM * (nDIM + 3) / 2, params.timeDIM), dtype=np.complex)
+    dyn_rhoA = np.zeros((int(nDIM * (nDIM + 3) / 2), params.timeDIM), dtype=np.complex)
+    dyn_rhoB = np.zeros((int(nDIM * (nDIM + 3) / 2), params.timeDIM), dtype=np.complex)
     g_tau_t_A = np.zeros((nDIM, nDIM), dtype=np.complex)
     g_tau_t_B = np.zeros((nDIM, nDIM), dtype=np.complex)
 
@@ -143,7 +143,6 @@ def RamanControlFunction(params):
         field_grad_A_EE=params.field_grad_A_EE.ctypes.data_as(POINTER(c_complex))
     )
 
-    print type(molecules.molA)
 
     return lib.RamanControlFunction(
         molecules.molA,

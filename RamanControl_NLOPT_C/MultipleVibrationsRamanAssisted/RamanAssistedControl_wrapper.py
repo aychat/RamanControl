@@ -37,7 +37,8 @@ class Parameters(Structure):
         ('t0_EE', c_double),
 
         ('w_R', c_double),
-        ('w_v', c_double),
+        ('w_v1', c_double),
+        ('w_v2', c_double),
         ('w_EE', c_double),
 
         ('nDIM', c_int),
@@ -50,6 +51,7 @@ class Parameters(Structure):
         ('lower_bounds', POINTER(c_double)),
         ('upper_bounds', POINTER(c_double)),
         ('guess', POINTER(c_double)),
+        ('MAX_EVAL', c_int)
     ]
 
 
@@ -97,5 +99,19 @@ def RamanControlFunction(molA, molB, func_params):
     return lib.RamanControlFunction(
         molA,
         molB,
+        func_params
+    )
+
+
+lib.Propagate.argtypes = (
+    POINTER(Molecule),      # molecule mol
+    POINTER(Parameters),    # parameter field_params
+)
+lib.Propagate.restype = None
+
+
+def PropagateFunction(mol, func_params):
+    return lib.Propagate(
+        mol,
         func_params
     )
