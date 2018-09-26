@@ -295,13 +295,13 @@ void CalculateField(cmplx* field, parameters* params)
     double width_R = params->width_R;
     double t0_R = params->t0_R;
 
-    double A_EE = params->A_EE;
-    double width_EE = params->width_EE;
-    double t0_EE = params->t0_EE;
+//    double A_EE = params->A_EE;
+//    double width_EE = params->width_EE;
+//    double t0_EE = params->t0_EE;
 
     double w_R = params->w_R;
     double w_v = params->w_v;
-    double w_EE = params->w_EE;
+//    double w_EE = params->w_EE;
 
 
     for(i=0; i<timeDIM; i++)
@@ -400,12 +400,16 @@ void Propagate(molecule* mol, parameters* params)
             mol->dyn_rho[i * timeDIM + t_index] = mol->rho[i * nDIM + i];
         }
 
-        mol->dyn_rho[4 * timeDIM + t_index] = mol->rho[0 * nDIM + 1];
-        mol->dyn_rho[5 * timeDIM + t_index] = mol->rho[0 * nDIM + 2];
-        mol->dyn_rho[6 * timeDIM + t_index] = mol->rho[0 * nDIM + 3];
-        mol->dyn_rho[7 * timeDIM + t_index] = mol->rho[1 * nDIM + 2];
-        mol->dyn_rho[8 * timeDIM + t_index] = mol->rho[1 * nDIM + 3];
-        mol->dyn_rho[9 * timeDIM + t_index] = mol->rho[2 * nDIM + 3];
+        mol->dyn_rho[nDIM * timeDIM + t_index] = 0.0*I;
+
+        for(i=0; i<nDIM; i++)
+        {
+            for(j=0; j<nDIM; j++)
+            {
+                mol->dyn_rho[nDIM * timeDIM + t_index] += mol->rho[i * nDIM + j]*mol->rho[j * nDIM + i];
+            }
+        }
+
 
         copy_mat(mol->rho, L_rho_func, nDIM);
 

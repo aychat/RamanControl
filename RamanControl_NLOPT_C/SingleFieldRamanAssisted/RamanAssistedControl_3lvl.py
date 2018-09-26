@@ -122,8 +122,8 @@ if __name__ == '__main__':
     energy_factor = 1. / 27.211385
     time_factor = .02418 / 1000
 
-    energies_A = np.array((0.000, 0.16304, 0.20209, 1.87855)) * energy_factor
-    energies_B = np.array((0.000, 0.15907, 0.19924, 1.77120)) * energy_factor
+    energies_A = np.array((0.000, 0.16304, 1.87855)) * energy_factor
+    energies_B = np.array((0.000, 0.15907, 1.77120)) * energy_factor
     N = len(energies_A)
     rho_0 = np.zeros((N, N), dtype=np.complex)
     rho_0[0, 0] = 1. + 0j
@@ -138,18 +138,10 @@ if __name__ == '__main__':
     gamma_decay = np.ones((N, N)) * population_decay
     np.fill_diagonal(gamma_decay, 0.0)
     gamma_decay = np.tril(gamma_decay)
-    gamma_decay[2, 1] = 0
-    gamma_decay[1, 2] = 0
     gamma_pure_dephasing = np.ones_like(gamma_decay) * electronic_dephasing
     np.fill_diagonal(gamma_pure_dephasing, 0.0)
     gamma_pure_dephasing[1, 0] = vibrational_dephasing
-    gamma_pure_dephasing[2, 0] = vibrational_dephasing
     gamma_pure_dephasing[0, 1] = vibrational_dephasing
-    gamma_pure_dephasing[0, 2] = vibrational_dephasing
-    gamma_pure_dephasing[1, 2] = vibrational_dephasing
-    gamma_pure_dephasing[2, 1] = vibrational_dephasing
-    # gamma_pure_dephasing[1, 2] = 0.
-    # gamma_pure_dephasing[2, 1] = 0.
 
     print(gamma_decay)
     print(gamma_pure_dephasing)
@@ -157,12 +149,12 @@ if __name__ == '__main__':
     timeAMP = 60000
     timeDIM = 120000
 
-    lower_bounds = np.asarray([0.00020, 3.0, 0.9*energies_A[1], 0.35*energy_factor])
-    upper_bounds = np.asarray([0.00070, 10.0, 1.1*energies_A[1], 0.45*energy_factor])
+    lower_bounds = np.asarray([0.00020, 3.0, 0.9*energies_A[1], 0.25*energy_factor])
+    upper_bounds = np.asarray([0.00070, 10.0, 1.1*energies_A[1], 0.35*energy_factor])
 
     print(lower_bounds)
-    guess = np.asarray([np.random.uniform(lower_bounds[i], upper_bounds[i]) for i in range(len(lower_bounds))])
-    # guess = np.asarray([0.000543963, 6.02721, energies_A[1], 0.4*energy_factor])
+    # guess = np.asarray([np.random.uniform(lower_bounds[i], upper_bounds[i]) for i in range(len(lower_bounds))])
+    guess = np.asarray([0.000570739, 5.57915, 0.00594461, 0.3*energy_factor])
 
     print(guess)
     params = ADict(
@@ -181,14 +173,14 @@ if __name__ == '__main__':
 
         w_R=0.6 * energy_factor,
         w_v=energies_A[1],
-        w_EE=(energies_A[3] - energies_A[1]),
+        w_EE=(energies_A[2] - energies_A[1]),
         rho_0=rho_0,
 
         lower_bounds=lower_bounds,
         upper_bounds=upper_bounds,
         guess=guess,
 
-        MAX_EVAL=50
+        MAX_EVAL=100
     )
 
     FourLevels = dict(
@@ -218,17 +210,14 @@ if __name__ == '__main__':
     axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[0, :], label='11_A', linewidth=2.)
     axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[1, :], label='22_A', linewidth=2.)
     axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[2, :], label='33_A', linewidth=2.)
-    axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[3, :], label='44_A', linewidth=2.)
-    axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[4, :], 'k', label='Tr[$\\rho_A^2$]', linewidth=2.)
-
+    axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[3, :], 'r', label='Tr[$\\rho_A^2$]', linewidth=2.)
     axes[0].legend(loc=2)
     render_ticks(axes[0])
 
     axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[0, :], label='11_B', linewidth=2.)
     axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[1, :], label='22_B', linewidth=2.)
     axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[2, :], label='33_B', linewidth=2.)
-    axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[3, :], label='44_B', linewidth=2.)
-    axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoA[4, :], 'k', label='Tr[$\\rho_A^2$]', linewidth=2.)
+    axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[3, :], 'r', label='Tr[$\\rho_B^2$]', linewidth=2.)
 
     axes[1].legend(loc=2)
     render_ticks(axes[1])
