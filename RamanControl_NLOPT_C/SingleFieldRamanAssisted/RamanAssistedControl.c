@@ -424,7 +424,7 @@ double calculateJ(molecule* molA, molecule* molB, int nDIM)
     double molA_excited_pop = creal(molA->rho[1*nDIM + 1]) + creal(molA->rho[2*nDIM + 2]);
     double molB_excited_pop = creal(molB->rho[1*nDIM + 1]) + creal(molB->rho[2*nDIM + 2]);
 
-    return molA_excited_pop - molB_excited_pop;
+    return molA_excited_pop - molB_excited_pop - creal(molB->rho[3*nDIM + 3]);
 }
 
 
@@ -471,9 +471,10 @@ cmplx* RamanControlFunction(molecule* molA, molecule* molB, parameters* func_par
     double *lower_bounds = func_params->lower_bounds;
     double *upper_bounds = func_params->upper_bounds;
 
-    opt = nlopt_create(NLOPT_LN_COBYLA, 4);
-    nlopt_set_lower_bounds(opt, lower_bounds);
-    nlopt_set_upper_bounds(opt, upper_bounds);
+//    opt = nlopt_create(NLOPT_LN_COBYLA, 4);
+    opt = nlopt_create(NLOPT_GN_DIRECT_L, 4);
+    nlopt_set_lower_bounds(opt, func_params->lower_bounds);
+    nlopt_set_upper_bounds(opt, func_params->upper_bounds);
     nlopt_set_max_objective(opt, nloptJ, (void*)&Ensemble);
     nlopt_set_xtol_rel(opt, 1.E-6);
     nlopt_set_maxeval(opt, func_params->MAX_EVAL);

@@ -161,8 +161,8 @@ if __name__ == '__main__':
     upper_bounds = np.asarray([0.00070, 10.0, 1.1*energies_A[1], 0.45*energy_factor])
 
     print(lower_bounds)
-    guess = np.asarray([np.random.uniform(lower_bounds[i], upper_bounds[i]) for i in range(len(lower_bounds))])
-    # guess = np.asarray([0.000543963, 6.02721, energies_A[1], 0.4*energy_factor])
+    # guess = np.asarray([np.random.uniform(lower_bounds[i], upper_bounds[i]) for i in range(len(lower_bounds))])
+    guess = np.asarray([0.000543963, 6.02721, energies_A[1], 0.5*energy_factor])
 
     print(guess)
     params = ADict(
@@ -188,7 +188,7 @@ if __name__ == '__main__':
         upper_bounds=upper_bounds,
         guess=guess,
 
-        MAX_EVAL=50
+        MAX_EVAL=100
     )
 
     FourLevels = dict(

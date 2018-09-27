@@ -97,7 +97,7 @@ class RamanControl:
         func_params.field_grad_A_EE = self.field_grad_A_EE.ctypes.data_as(POINTER(c_complex))
 
         func_params.lower_bounds = params.lower_bounds.ctypes.data_as(POINTER(c_double))
-        func_params.lower_bounds = params.lower_bounds.ctypes.data_as(POINTER(c_double))
+        func_params.upper_bounds = params.upper_bounds.ctypes.data_as(POINTER(c_double))
         func_params.guess = guess.ctypes.data_as(POINTER(c_double))
 
         func_params.MAX_EVAL = params.MAX_EVAL
@@ -133,8 +133,8 @@ if __name__ == '__main__':
     # mu[2, 1] = 0j
     # mu[1, 2] = 0j
     population_decay = 2.418884e-8
-    electronic_dephasing = 2.418884e-4
-    vibrational_dephasing = 0.5 * 2.418884e-5
+    electronic_dephasing = 0.2*2.418884e-4
+    vibrational_dephasing = 0.25 * 2.418884e-5
     gamma_decay = np.ones((N, N)) * population_decay
     np.fill_diagonal(gamma_decay, 0.0)
     gamma_decay = np.tril(gamma_decay)
@@ -149,12 +149,12 @@ if __name__ == '__main__':
     timeAMP = 60000
     timeDIM = 120000
 
-    lower_bounds = np.asarray([0.00020, 3.0, 0.9*energies_A[1], 0.25*energy_factor])
-    upper_bounds = np.asarray([0.00070, 10.0, 1.1*energies_A[1], 0.35*energy_factor])
+    lower_bounds = np.asarray([0.00010, 3.5, 0.9*energies_A[1], 0.25*energy_factor])
+    upper_bounds = np.asarray([0.000350, 10.0, 1.1*energies_A[1], 0.35*energy_factor])
 
     print(lower_bounds)
     # guess = np.asarray([np.random.uniform(lower_bounds[i], upper_bounds[i]) for i in range(len(lower_bounds))])
-    guess = np.asarray([0.000570739, 5.57915, 0.00594461, 0.3*energy_factor])
+    guess = np.asarray([0.000349943, 4.0016, 0.00584641, 0.0128597])
 
     print(guess)
     params = ADict(
@@ -180,7 +180,7 @@ if __name__ == '__main__':
         upper_bounds=upper_bounds,
         guess=guess,
 
-        MAX_EVAL=100
+        MAX_EVAL=200
     )
 
     FourLevels = dict(
@@ -228,35 +228,3 @@ if __name__ == '__main__':
     print(molecules.rhoB.real, "\n")
 
     plt.show()
-
-    # gamma = gamma_pure_dephasing.copy()
-    # for i in range(4):
-    #     for j in range(4):
-    #         for k in range(4):
-    #             if k > i:
-    #                 gamma[i, j] += gamma_decay[k, i]
-    #             if k > j:
-    #                 gamma[i, j] += gamma_decay[k, j]
-    #         gamma[i, j] *= 0.5
-    # # gamma += gamma_decay
-    #
-    # print(gamma)
-    #
-    # N = 1000
-    # omega = np.linspace(1.25, 3., N) * energy_factor
-    # spectraA = np.zeros(N)
-    # spectraB = np.zeros(N)
-    #
-    # for i in range(N):
-    #     spectraA[i] *= 0.
-    #     spectraB[i] *= 0.
-    #     for j in range(1, 4):
-    #         spectraA[i] += molecules.energies_A[j] * np.abs(molecules.mu[j, 0])**2 * gamma[j, 0] / ((molecules.energies_A[j] - omega[i])**2 + gamma[j, 0]**2)
-    #         spectraB[i] += molecules.energies_B[j] * np.abs(molecules.mu[j, 0])**2 * gamma[j, 0] / ((molecules.energies_B[j] - omega[i])**2 + gamma[j, 0]**2)
-    #
-    # plt.plot(1239.84193/omega*energy_factor, spectraA / omega / (spectraA / omega).max(), 'r')
-    # plt.plot(1239.84193/omega*energy_factor, spectraB / omega / (spectraA / omega).max(), 'k')
-    # plt.plot(1239.84193 / omega * energy_factor, spectraA / spectraA.max(), 'r--')
-    # plt.plot(1239.84193 / omega * energy_factor, spectraB / spectraA.max(), 'k--')
-    # plt.show()
-
