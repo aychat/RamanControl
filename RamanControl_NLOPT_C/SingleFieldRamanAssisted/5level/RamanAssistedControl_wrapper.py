@@ -37,8 +37,12 @@ class Parameters(Structure):
         ('t0_EE', c_double),
 
         ('w_R', c_double),
-        ('w_v', c_double),
-        ('w_EE', c_double),
+        ('w_v1', c_double),
+        ('w_v2', c_double),
+        ('w_v3', c_double),
+        ('w_EE1', c_double),
+        ('w_EE2', c_double),
+        ('w_EE3', c_double),
 
         ('nDIM', c_int),
         ('timeDIM', c_int),
@@ -65,14 +69,13 @@ class Molecule(Structure):
         ('mu', POINTER(c_complex)),
         ('rho', POINTER(c_complex)),
         ('dyn_rho', POINTER(c_complex)),
-        ('g_tau_t', POINTER(c_complex)),
-        ('rho_0', POINTER(c_complex))
+        ('g_tau_t', POINTER(c_complex))
     ]
 
 
 try:
     # Load the shared library assuming that it is in the same directory
-    lib = ctypes.cdll.LoadLibrary(os.getcwd() + "/RamanAssistedControl.so")
+    lib = ctypes.cdll.LoadLibrary(os.getcwd() + "/RamanAssistedControl_5lvl.so")
 except OSError:
     raise NotImplementedError(
         """

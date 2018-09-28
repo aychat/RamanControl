@@ -41,8 +41,6 @@ class RamanControl:
         self.gamma_pure_dephasing = np.ascontiguousarray(self.gamma_pure_dephasing)
         self.mu = np.ascontiguousarray(self.mu)
         self.rho_0 = np.ascontiguousarray(params.rho_0)
-        self.rho_0_A = np.ascontiguousarray(params.rho_0_A)
-        self.rho_0_B = np.ascontiguousarray(params.rho_0_B)
         self.rhoA = np.ascontiguousarray(params.rho_0.copy())
         self.rhoB = np.ascontiguousarray(params.rho_0.copy())
         self.energies_A = np.ascontiguousarray(self.energies_A)
@@ -69,8 +67,6 @@ class RamanControl:
         molB.dyn_rho = self.dyn_rhoB.ctypes.data_as(POINTER(c_complex))
         molA.g_tau_t = self.g_tau_t_A.ctypes.data_as(POINTER(c_complex))
         molB.g_tau_t = self.g_tau_t_B.ctypes.data_as(POINTER(c_complex))
-        molA.rho_0 = self.rho_0_A.ctypes.data_as(POINTER(c_complex))
-        molB.rho_0 = self.rho_0_B.ctypes.data_as(POINTER(c_complex))
 
     def create_parameters(self, func_params, params):
         func_params.time = self.time.ctypes.data_as(POINTER(c_double))
@@ -90,8 +86,12 @@ class RamanControl:
         func_params.t0_EE = t0_EE
 
         func_params.w_R = params.w_R
-        func_params.w_v = params.w_v
-        func_params.w_EE = params.w_EE
+        func_params.w_v1 = params.w_v1
+        func_params.w_v2 = params.w_v2
+        func_params.w_v3 = params.w_v3
+        func_params.w_EE1 = params.w_EE1
+        func_params.w_EE2 = params.w_EE2
+        func_params.w_EE3 = params.w_EE3
 
         func_params.nDIM = len(self.energies_A)
         func_params.timeDIM = len(self.time)
@@ -126,31 +126,19 @@ if __name__ == '__main__':
     energy_factor = 1. / 27.211385
     time_factor = .02418 / 1000
 
-    energies_A = np.array((0.000, 0.16304, 1.87855)) * energy_factor
-    energies_B = np.array((0.000, 0.15907, 1.77120)) * energy_factor
+    energies_A = np.array((0.000, 0.09832, 0.16304, 0.20209, 1.87855)) * energy_factor
+    energies_B = np.array((0.000, 0.09931, 0.15907, 0.19924, 1.77120)) * energy_factor
     N = len(energies_A)
     rho_0 = np.zeros((N, N), dtype=np.complex)
     rho_0[0, 0] = 1. + 0j
-
-    rho_0_A = np.zeros_like(rho_0, dtype=np.complex)
-    rho_0_A[0, 0] = 0.5901
-    rho_0_A[1, 1] = 0.4020
-    rho_0_A[2, 2] = 1. - (np.trace(rho_0_A))
-    print(np.trace(rho_0_A))
-
-    rho_0_B = np.zeros_like(rho_0, dtype=np.complex)
-    rho_0_B[0, 0] = 0.95583
-    rho_0_B[1, 1] = 0.03636
-    rho_0_B[2, 2] = 1. - (np.trace(rho_0_B))
-    print(np.trace(rho_0_B))
 
     mu = 4.97738 * np.ones_like(rho_0)
     np.fill_diagonal(mu, 0j)
     # mu[2, 1] = 0j
     # mu[1, 2] = 0j
     population_decay = 2.418884e-8
-    electronic_dephasing = 0.2*2.418884e-4
-    vibrational_dephasing = 0.1 * 2.418884e-5
+    electronic_dephasing = 0.1*2.418884e-4
+    vibrational_dephasing = 0.5 * 2.418884e-5
     gamma_decay = np.ones((N, N)) * population_decay
     np.fill_diagonal(gamma_decay, 0.0)
     gamma_decay = np.tril(gamma_decay)
@@ -158,6 +146,16 @@ if __name__ == '__main__':
     np.fill_diagonal(gamma_pure_dephasing, 0.0)
     gamma_pure_dephasing[1, 0] = vibrational_dephasing
     gamma_pure_dephasing[0, 1] = vibrational_dephasing
+    gamma_pure_dephasing[2, 0] = vibrational_dephasing
+    gamma_pure_dephasing[0, 2] = vibrational_dephasing
+    gamma_pure_dephasing[3, 0] = vibrational_dephasing
+    gamma_pure_dephasing[0, 3] = vibrational_dephasing
+    gamma_pure_dephasing[1, 2] = 0.0
+    gamma_pure_dephasing[2, 1] = 0.0
+    gamma_pure_dephasing[2, 3] = 0.0
+    gamma_pure_dephasing[3, 2] = 0.0
+    gamma_pure_dephasing[3, 1] = 0.0
+    gamma_pure_dephasing[1, 3] = 0.0
 
     print(gamma_decay)
     print(gamma_pure_dephasing)
@@ -165,17 +163,11 @@ if __name__ == '__main__':
     timeAMP = 60000
     timeDIM = 120000
 
-    # lower_bounds = np.asarray([0.00020, 0.00020, 3.5, 20., 0.9*energies_A[1], 0.95*(energies_A[2] - energies_A[1]), 0.25*energy_factor])
-    # upper_bounds = np.asarray([0.00070, 0.00070, 10.0, 35., 1.1*energies_A[1], 1.*(energies_A[2] - energies_A[1]), 0.35*energy_factor])
-    # lower_bounds = np.asarray([0.00020, 4.0, 0.95*energies_A[1], 0.25*energy_factor])
-    # upper_bounds = np.asarray([0.00070, 35.0, 1.05*energies_A[1], 0.35*energy_factor])
-    lower_bounds = np.asarray([0.000010, 4.0, 0.95*(energies_A[2] - energies_A[1])])
-    upper_bounds = np.asarray([0.000100, 35.0, 1.0*(energies_A[2] - energies_A[1])])
+    lower_bounds = np.asarray([0.00010, 3.5, 0.9*energies_A[1], 0.9*energies_A[2], 0.9*energies_A[3], 0.35*energy_factor])
+    upper_bounds = np.asarray([0.000350, 10.0, 1.1*energies_A[1], 1.1*energies_A[2], 1.1*energies_A[3], 0.45*energy_factor])
 
     print(lower_bounds)
-    # guess = np.asarray([np.random.uniform(lower_bounds[i], upper_bounds[i]) for i in range(len(lower_bounds))])
-    # guess = np.asarray([0.000303909, 23.4547, energies_A[1], 0.3*energy_factor])
-    guess = np.asarray([9.99977e-05, 23.0909, 0.0630438])
+    guess = np.asarray([0.000349943, 4.0016, energies_A[1], energies_A[2], energies_A[3], 0.4*energy_factor])
 
     print(guess)
     params = ADict(
@@ -186,24 +178,26 @@ if __name__ == '__main__':
 
         A_R=0.000576595,
         width_R=5.017,
-        t0_R=-0.0,
+        t0_R=0.0,
 
         A_EE=0.000366972,
         width_EE=19.32,
-        t0_EE=0.0,
+        t0_EE=0.55,
 
         w_R=0.6 * energy_factor,
-        w_v=energies_A[1],
-        w_EE=(energies_A[2] - energies_A[1]),
+        w_v1=energies_A[1],
+        w_v2=energies_A[2],
+        w_v3=energies_A[3],
+        w_EE1=(energies_A[4] - energies_A[1]),
+        w_EE2=(energies_A[4] - energies_A[2]),
+        w_EE3=(energies_A[4] - energies_A[3]),
         rho_0=rho_0,
-        rho_0_A=rho_0_A,
-        rho_0_B=rho_0_B,
 
         lower_bounds=lower_bounds,
         upper_bounds=upper_bounds,
         guess=guess,
 
-        MAX_EVAL=50
+        MAX_EVAL=500
     )
 
     FourLevels = dict(
@@ -228,19 +222,24 @@ if __name__ == '__main__':
     fig, axes = plt.subplots(nrows=1, ncols=1)
     axes.plot(molecules.time*time_factor, molecules.field_t.real, 'r')
 
-    fig1, axes = plt.subplots(nrows=2, ncols=1, sharex=True, sharey=True)
+    fig1, axes = plt.subplots(nrows=2, ncols=1, sharex=True)
+    fig1.suptitle("Vibrational dephasing = 2ps")
 
     axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[0, :], label='11_A', linewidth=2.)
     axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[1, :], label='22_A', linewidth=2.)
     axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[2, :], label='33_A', linewidth=2.)
-    axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[3, :], 'r', label='Tr[$\\rho_A^2$]', linewidth=2.)
+    axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[3, :], label='44_A', linewidth=2.)
+    axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[4, :], label='55_A', linewidth=2.)
+    axes[0].plot(molecules.time*time_factor, molecules.dyn_rhoA[5, :], 'r', label='Tr[$\\rho_A^2$]', linewidth=2.)
     axes[0].legend(loc=2)
     render_ticks(axes[0])
 
     axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[0, :], label='11_B', linewidth=2.)
     axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[1, :], label='22_B', linewidth=2.)
     axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[2, :], label='33_B', linewidth=2.)
-    axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[3, :], 'r', label='Tr[$\\rho_B^2$]', linewidth=2.)
+    axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[3, :], label='44_B', linewidth=2.)
+    axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[4, :], label='55_B', linewidth=2.)
+    axes[1].plot(molecules.time*time_factor, molecules.dyn_rhoB[5, :], 'r', label='Tr[$\\rho_B^2$]', linewidth=2.)
 
     axes[1].legend(loc=2)
     render_ticks(axes[1])

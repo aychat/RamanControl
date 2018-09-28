@@ -19,8 +19,12 @@ typedef struct parameters{
     double t0_EE;
 
     double w_R;
-    double w_v;
-    double w_EE;
+    double w_v1;
+    double w_v2;
+    double w_v3;
+    double w_EE1;
+    double w_EE2;
+    double w_EE3;
 
     int nDIM;
     int timeDIM;
@@ -46,7 +50,6 @@ typedef struct molecule{
     cmplx* rho;
     cmplx* dyn_rho;
     cmplx* g_tau_t;
-    cmplx* rho_0;
 } molecule;
 
 typedef struct mol_system{
@@ -301,15 +304,19 @@ void CalculateField(cmplx* field, parameters* params)
     double t0_EE = params->t0_EE;
 
     double w_R = params->w_R;
-    double w_v = params->w_v;
-    double w_EE = params->w_EE;
+    double w_v1 = params->w_v1;
+    double w_v2 = params->w_v2;
+    double w_v3 = params->w_v3;
+    double w_EE1 = params->w_EE1;
+    double w_EE2 = params->w_EE2;
+    double w_EE3 = params->w_EE3;
 
 
     for(i=0; i<timeDIM; i++)
     {
-//        field[i] = A_R * exp(-pow(t[i] - t0_R, 2) / (2. * pow(width_R, 2))) * (cos((w_R + w_v) * t[i]) + cos(w_R * t[i]))
+        field[i] = A_R * exp(-pow(t[i] - t0_R, 2) / (2. * pow(width_R, 2))) *
+        (cos((w_R + w_v1) * t[i]) + cos((w_R + w_v2) * t[i]) + cos((w_R + w_v3) * t[i]) + 3.*cos(w_R * t[i]));
 //        + A_EE * exp(-pow(t[i] - t0_EE, 2) / (2. * pow(width_EE, 2))) * cos(w_EE * t[i]);
-        field[i] = A_EE * exp(-pow(t[i] - t0_EE, 2) / (2. * pow(width_EE, 2))) * cos(w_EE * t[i]);
     }
 }
 
@@ -375,7 +382,7 @@ void Propagate(molecule* mol, parameters* params)
     int nDIM = params->nDIM;
     int timeDIM = params->timeDIM;
 
-    cmplx *rho_0 = mol->rho_0;
+    cmplx *rho_0 = params->rho_0;
     double *time = params->time;
 
     cmplx* field = params->field_out;
@@ -423,10 +430,8 @@ void Propagate(molecule* mol, parameters* params)
 
 double calculateJ(molecule* molA, molecule* molB, int nDIM)
 {
-    double molA_excited_pop = creal(molA->rho[2*nDIM + 2]);
-//    double molA_excited_pop = creal(molA->rho[1*nDIM + 1]) + creal(molA->rho[2*nDIM + 2]);
-    double molB_excited_pop = creal(molB->rho[2*nDIM + 2]);
-//    double molB_excited_pop = creal(molB->rho[1*nDIM + 1]) + creal(molB->rho[2*nDIM + 2]);
+    double molA_excited_pop = creal(molA->rho[1*nDIM + 1]) + creal(molA->rho[2*nDIM + 2]) + creal(molA->rho[3*nDIM + 3]);
+    double molB_excited_pop = creal(molB->rho[1*nDIM + 1]) + creal(molB->rho[2*nDIM + 2]) + creal(molB->rho[3*nDIM + 3]);
 
     return molA_excited_pop - molB_excited_pop;
 }
@@ -442,13 +447,12 @@ double nloptJ(unsigned N, const double *opt_params, double *grad_J, void *nloptJ
     molecule* moleculeB = (*Ensemble)->moleculeB;
     double J;
 
-//    params->A_R = opt_params[0];
-    params->A_EE = opt_params[0];
-//    params->width_R = -params->time[0] / opt_params[2];
-    params->width_EE = -params->time[0] / opt_params[1];
-//    params->w_v = opt_params[4];
-    params->w_EE = opt_params[2];
-//    params->w_R = opt_params[6];
+    params->A_R = opt_params[0];
+    params->width_R = -params->time[0] / opt_params[1];
+    params->w_v1 = opt_params[2];
+    params->w_v2 = opt_params[3];
+    params->w_v3 = opt_params[4];
+    params->w_R = opt_params[5];
 
     CalculateField(params->field_out, params);
     Propagate(moleculeA, params);
@@ -457,9 +461,9 @@ double nloptJ(unsigned N, const double *opt_params, double *grad_J, void *nloptJ
     int nDIM = params->nDIM;
 
     J = calculateJ(moleculeA, moleculeB, nDIM);
-//    printf("%g %g %g %g %g %g %g %g\n", params->A_R, params->A_EE, -params->time[0] / params->width_R,
-//    -params->time[0] / params->width_EE, params->w_v * 27.211385, params->w_EE * 27.211385, 27.211385 * params->w_R, J);
-    printf("%g %g %g %g \n", params->A_EE, -params->time[0] / params->width_EE, params->w_EE * 27.211385, J);
+    printf("%g %g %g %g %g %g %g\n", params->A_R, -params->time[0] / params->width_R, params->w_v1 * 27.211385,
+    params->w_v2 * 27.211385, params->w_v3 * 27.211385, 27.211385 * params->w_R, J);
+
     return J;
 }
 
@@ -479,22 +483,23 @@ cmplx* RamanControlFunction(molecule* molA, molecule* molB, parameters* func_par
     double *lower_bounds = func_params->lower_bounds;
     double *upper_bounds = func_params->upper_bounds;
 
-//    opt = nlopt_create(NLOPT_LN_COBYLA, 3);
-    opt = nlopt_create(NLOPT_GN_DIRECT_L, 3);
+//    opt = nlopt_create(NLOPT_LN_COBYLA, 6);
+    opt = nlopt_create(NLOPT_GN_DIRECT_L, 6);
     nlopt_set_lower_bounds(opt, func_params->lower_bounds);
     nlopt_set_upper_bounds(opt, func_params->upper_bounds);
     nlopt_set_max_objective(opt, nloptJ, (void*)&Ensemble);
     nlopt_set_xtol_rel(opt, 1.E-6);
     nlopt_set_maxeval(opt, func_params->MAX_EVAL);
 
-    double x[3] =  {func_params->guess[0], func_params->guess[1], func_params->guess[2]};
+    double x[6] =  {func_params->guess[0], func_params->guess[1], func_params->guess[2], func_params->guess[3],
+     func_params->guess[4], func_params->guess[5]};
     double maxf;
 
     if (nlopt_optimize(opt, x, &maxf) < 0) {
         printf("nlopt failed!\n");
     }
     else {
-        printf("found maximum at f(%g, %g, %g) = %0.10g\n", x[0], x[1], x[2], maxf);
+        printf("found maximum at f(%g, %g, %g, %g, %g, %g) = %0.10g\n", x[0], x[1], x[2], x[3], x[4], x[5], maxf);
     }
 
     nlopt_destroy(opt);
